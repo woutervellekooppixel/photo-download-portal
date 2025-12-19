@@ -16,7 +16,8 @@ import {
   FileCode,
   FileSpreadsheet,
   Video,
-  Music
+  Music,
+  Star
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatBytes, formatDate } from "@/lib/utils";
@@ -35,6 +36,7 @@ export default function DownloadGallery({
   const [thumbnailsLoaded, setThumbnailsLoaded] = useState(0);
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
   const [isSelectMode, setIsSelectMode] = useState(false);
+  const [ratings, setRatings] = useState<Record<string, boolean>>({});
 
   // Helper function to check if file is an image
   const isImage = (filename: string) => {
@@ -160,6 +162,13 @@ export default function DownloadGallery({
     loadThumbnails();
   }, [metadata, previewImage]);
 
+  // Load ratings from metadata
+  useEffect(() => {
+    if (metadata.ratings) {
+      setRatings(metadata.ratings);
+    }
+  }, [metadata.ratings]);
+
   const downloadAll = async () => {
     setDownloading(true);
     try {
@@ -219,6 +228,34 @@ export default function DownloadGallery({
       setSelectedFiles(new Set());
     } else {
       setSelectedFiles(new Set(imageFiles.map(f => f.key)));
+    }
+  };
+
+  const toggleRating = async (fileKey: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    const newRating = !ratings[fileKey];
+    
+    // Optimistically update UI
+    setRatings(prev => ({
+      ...prev,
+      [fileKey]: newRating
+    }));
+
+    // Save to backend
+    try {
+      await fetch(`/api/rate/${metadata.slug}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileKey, rated: newRating }),
+      });
+    } catch (error) {
+      console.error('Failed to save rating:', error);
+      // Revert on error
+      setRatings(prev => ({
+        ...prev,
+        [fileKey]: !newRating
+      }));
     }
   };
 
@@ -558,6 +595,22 @@ export default function DownloadGallery({
                                 className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
                               />
                             </div>
+                          )}
+
+                          {/* Star rating - top right */}
+                          {!isSelectMode && (
+                            <button
+                              onClick={(e) => toggleRating(file.key, e)}
+                              className="absolute top-2 right-2 z-10 p-1.5 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-sm transition-all duration-200 group/star"
+                            >
+                              <Star 
+                                className={`h-4 w-4 transition-all duration-200 ${
+                                  ratings[file.key] 
+                                    ? 'fill-yellow-400 text-yellow-400' 
+                                    : 'text-white group-hover/star:fill-white/50'
+                                }`}
+                              />
+                            </button>
                           )}
 
                           {/* Thumbnail with hover zoom */}

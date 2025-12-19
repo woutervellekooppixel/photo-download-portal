@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Upload, X, Copy, Trash2, LogOut, Check, ExternalLink, Mail } from "lucide-react";
+import { Upload, X, Copy, Trash2, LogOut, Check, ExternalLink, Mail, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,6 +23,7 @@ interface Upload {
   previewImageKey?: string;
   clientEmail?: string;
   customMessage?: string;
+  ratings?: Record<string, boolean>;
 }
 
 export default function AdminDashboard() {
@@ -1045,6 +1046,12 @@ export default function AdminDashboard() {
                         <p>Aangemaakt: {formatDate(new Date(upload.createdAt))}</p>
                         <p>Verloopt: {formatDate(new Date(upload.expiresAt))}</p>
                         <p>Downloads: {upload.downloads}×</p>
+                        {upload.ratings && Object.keys(upload.ratings).length > 0 && (
+                          <p className="flex items-center gap-1">
+                            <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                            Gewaardeerd: {Object.keys(upload.ratings).length} foto's
+                          </p>
+                        )}
                       </div>
                       
                       {/* Photo grid for preview selection */}
@@ -1054,6 +1061,7 @@ export default function AdminDashboard() {
                           <div className="grid grid-cols-4 gap-2">
                             {imageFiles.map((file) => {
                               const isPreview = upload.previewImageKey === file.key;
+                              const isRated = upload.ratings?.[file.key];
                               const thumbnailUrl = thumbnailUrls[file.key];
                               
                               return (
@@ -1067,6 +1075,11 @@ export default function AdminDashboard() {
                                   }`}
                                   title={file.name}
                                 >
+                                  {isRated && (
+                                    <div className="absolute top-1 right-1 z-10">
+                                      <Star className="h-4 w-4 fill-yellow-400 text-yellow-400 drop-shadow" />
+                                    </div>
+                                  )}
                                   {thumbnailUrl ? (
                                     <img
                                       src={thumbnailUrl}

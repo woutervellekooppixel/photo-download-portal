@@ -36,6 +36,7 @@ export interface UploadMetadata {
   previewImageKey?: string; // Optional: key of the image to show on loading screen
   clientEmail?: string; // Optional: client email for sending notifications
   customMessage?: string; // Optional: custom message to include in email
+  ratings?: Record<string, boolean>; // Optional: client ratings for photos (fileKey -> rated)
 }
 
 export interface MonthlyStats {
