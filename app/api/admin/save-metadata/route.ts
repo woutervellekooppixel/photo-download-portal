@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
       downloads: 0,
     };
 
-    await saveMetadata(slug, metadata);
+    await saveMetadata(metadata);
 
     return NextResponse.json({
       success: true,
