@@ -396,6 +396,63 @@ export default function DownloadGallery({
         </div>
       </nav>
 
+      {/* Fullscreen loading overlay with subtle progress */}
+      {loadingThumbnails && (
+        <div 
+          className="fixed inset-0 z-50 transition-opacity duration-1000" 
+          style={{ opacity: loadingThumbnails ? 1 : 0 }}
+        >
+          {/* Fullscreen preview image */}
+          <div className="absolute inset-0 bg-black">
+            {previewImage && thumbnailUrls[previewImage.key] ? (
+              <Image
+                src={thumbnailUrls[previewImage.key]}
+                alt="Loading preview"
+                fill
+                className="object-cover animate-in fade-in duration-700"
+                sizes="100vw"
+                priority
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-900 to-gray-800">
+                <div className="relative w-32 h-32">
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full opacity-30 animate-pulse" />
+                  <ImageIcon className="absolute inset-0 m-auto h-16 w-16 text-white/40" />
+                </div>
+              </div>
+            )}
+          </div>
+          
+          {/* Subtle dark overlay */}
+          <div className="absolute inset-0 bg-black/20" />
+          
+          {/* Minimal progress bar at bottom */}
+          <div className="absolute bottom-0 left-0 right-0 p-8">
+            <div className="max-w-md mx-auto space-y-3">
+              {/* Thin progress bar */}
+              <div className="relative w-full h-1 bg-white/20 rounded-full overflow-hidden backdrop-blur-sm">
+                <div 
+                  className="absolute inset-y-0 left-0 bg-white rounded-full transition-all duration-500 ease-out"
+                  style={{ width: `${(thumbnailsLoaded / metadata.files.length) * 100}%` }}
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent animate-shimmer" />
+                </div>
+              </div>
+              
+              {/* Minimal stats */}
+              <div className="flex items-center justify-between text-sm text-white/90">
+                <span className="font-medium drop-shadow">
+                  {Math.round((thumbnailsLoaded / metadata.files.length) * 100)}%
+                </span>
+                <span className="drop-shadow">
+                  {thumbnailsLoaded} / {metadata.files.length}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className={`container mx-auto p-6 max-w-6xl transition-opacity duration-1000 ${loadingThumbnails ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
         {/* Project Title */}
         <div className="mb-8 mt-4">
@@ -447,63 +504,6 @@ export default function DownloadGallery({
               </div>
             )}
 
-            {/* Fullscreen loading overlay with subtle progress */}
-            {loadingThumbnails && (
-                  <div 
-                    className="fixed inset-0 z-50 transition-opacity duration-1000" 
-                    style={{ opacity: loadingThumbnails ? 1 : 0 }}
-                  >
-                    {/* Fullscreen preview image */}
-                    <div className="absolute inset-0 bg-black">
-                      {previewImage && thumbnailUrls[previewImage.key] ? (
-                        <Image
-                          src={thumbnailUrls[previewImage.key]}
-                          alt="Loading preview"
-                          fill
-                          className="object-cover animate-in fade-in duration-700"
-                          sizes="100vw"
-                          priority
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-900 to-gray-800">
-                          <div className="relative w-32 h-32">
-                            <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full opacity-30 animate-pulse" />
-                            <ImageIcon className="absolute inset-0 m-auto h-16 w-16 text-white/40" />
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                    
-                    {/* Subtle dark overlay */}
-                    <div className="absolute inset-0 bg-black/20" />
-                    
-                    {/* Minimal progress bar at bottom */}
-                    <div className="absolute bottom-0 left-0 right-0 p-8">
-                      <div className="max-w-md mx-auto space-y-3">
-                        {/* Thin progress bar */}
-                        <div className="relative w-full h-1 bg-white/20 rounded-full overflow-hidden backdrop-blur-sm">
-                          <div 
-                            className="absolute inset-y-0 left-0 bg-white rounded-full transition-all duration-500 ease-out"
-                            style={{ width: `${(thumbnailsLoaded / metadata.files.length) * 100}%` }}
-                          >
-                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent animate-shimmer" />
-                          </div>
-                        </div>
-                        
-                        {/* Minimal stats */}
-                        <div className="flex items-center justify-between text-sm text-white/90">
-                          <span className="font-medium drop-shadow">
-                            {Math.round((thumbnailsLoaded / metadata.files.length) * 100)}%
-                          </span>
-                          <span className="drop-shadow">
-                            {thumbnailsLoaded} / {metadata.files.length}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-            
             {imageFolders.map((folder) => (
               <div key={folder} className="mb-8">
                 {hasImageFolders && (
