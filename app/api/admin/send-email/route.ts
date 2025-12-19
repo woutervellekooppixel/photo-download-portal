@@ -85,10 +85,12 @@ export async function POST(request: NextRequest) {
         <table role="presentation" style="max-width: 600px; width: 100%; border-collapse: collapse;">
           
           ${previewImageUrl ? `
-          <!-- Preview Image -->
+          <!-- Preview Image (clickable) -->
           <tr>
             <td style="padding: 0 0 24px 0;">
-              <img src="${previewImageUrl}" alt="Preview" style="width: 100%; height: auto; display: block; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);" />
+              <a href="${downloadUrl}" style="display: block;">
+                <img src="${previewImageUrl}" alt="Preview" style="width: 100%; height: auto; display: block; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);" />
+              </a>
             </td>
           </tr>
           ` : ""}
@@ -99,13 +101,15 @@ export async function POST(request: NextRequest) {
               
               ${customMessage ? `
               <!-- Custom Message -->
-              <div style="margin-bottom: 32px;">
+              <div style="margin-bottom: 32px; background-color: #ffffff;">
                 <p style="margin: 0; font-size: 16px; line-height: 1.6; color: #374151; white-space: pre-wrap;">${customMessage}</p>
               </div>
               ` : `
-              <div style="margin-bottom: 32px;">
+              <div style="margin-bottom: 32px; background-color: #ffffff;">
                 <p style="margin: 0; font-size: 16px; line-height: 1.6; color: #374151;">
-                  Je foto's staan voor je klaar. Klik op de knop hieronder om ze te downloaden.
+                  Hey! Wat fijn dat je de foto's wilt bekijken 😊<br><br>
+                  Ik heb ze voor je klaar gezet en je kunt ze hieronder downloaden. De foto's blijven een tijdje beschikbaar, dus je hebt alle tijd om ze rustig te bekijken en te bewaren.<br><br>
+                  Veel plezier ermee!
                 </p>
               </div>
               `}
@@ -126,7 +130,7 @@ export async function POST(request: NextRequest) {
                 <tr>
                   <td align="center">
                     <div style="color: #000000; font-size: 14px; font-weight: 700; letter-spacing: 2px;">
-                      WOUTER.PHOTO
+                      WOUTER PHOTO
                     </div>
                   </td>
                 </tr>
