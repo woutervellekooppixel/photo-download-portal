@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAdminAuth } from "@/lib/auth";
 import { uploadFile, saveMetadata, deleteFolder, type UploadMetadata } from "@/lib/r2";
 
+// Configure route to handle large payloads
+export const maxDuration = 300; // 5 minutes
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   const authError = await requireAdminAuth();
   if (authError) return authError;

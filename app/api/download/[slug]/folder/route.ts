@@ -3,6 +3,10 @@ import { getMetadata, getFile } from '@/lib/r2';
 import archiver from 'archiver';
 import { downloadRateLimit } from '@/lib/rateLimit';
 
+// Configure route for large downloads
+export const maxDuration = 300; // 5 minutes
+export const dynamic = 'force-dynamic';
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ slug: string }> }

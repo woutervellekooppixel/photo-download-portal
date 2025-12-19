@@ -1,0 +1,16 @@
+{
+  "functions": {
+    "app/api/admin/upload/route.ts": {
+      "maxDuration": 300,
+      "memory": 3008
+    },
+    "app/api/download/[slug]/all/route.ts": {
+      "maxDuration": 300,
+      "memory": 3008
+    },
+    "app/api/download/[slug]/folder/route.ts": {
+      "maxDuration": 300,
+      "memory": 3008
+    }
+  }
+}
