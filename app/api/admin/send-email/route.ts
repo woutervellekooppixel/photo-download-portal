@@ -106,17 +106,18 @@ export async function POST(request: NextRequest) {
               
               ${customMessage ? `
               <!-- Custom Message -->
-              <div style="margin-bottom: 32px; background-color: #ffffff;">
+              <div style="margin-bottom: 24px; background-color: #ffffff;">
                 <p style="margin: 0; font-size: 16px; line-height: 1.6; color: #374151;">${formattedCustomMessage}</p>
               </div>
-              ` : `
+              ` : ''}
+              
+              <!-- Standard Message (always shown) -->
               <div style="margin-bottom: 32px; background-color: #ffffff;">
                 <p style="margin: 0; font-size: 16px; line-height: 1.6; color: #374151;">
-                  Hi,<br><br>
-                  Hierbij de foto's van afgelopen avond.<br><br>
+                  ${!customMessage ? 'Hi,<br><br>' : ''}
+                  Je download link staat hieronder klaar. De foto's zijn beschikbaar tot ${expiryDate} en je kunt ze zo vaak downloaden als je wilt.
                 </p>
               </div>
-              `}
 
               <!-- CTA Button -->
               <table role="presentation" style="width: 100%; margin-bottom: 32px;">
@@ -129,21 +130,19 @@ export async function POST(request: NextRequest) {
                 </tr>
               </table>
 
-              ${!customMessage ? `
-              <!-- Social Links (only when no custom message) -->
+              <!-- Social Links and Signature -->
               <div style="margin-bottom: 32px; background-color: #ffffff;">
                 <p style="margin: 0 0 12px; font-size: 16px; line-height: 1.6; color: #374151;">
-                  <strong>Mijn socials:</strong><br>
+                  <strong>Volg me op social media:</strong><br>
                   Instagram: <a href="https://instagram.com/woutervellekoop" style="color: #000000; text-decoration: none;">@woutervellekoop</a><br>
                   Facebook: <a href="https://facebook.com/wvellekoop" style="color: #000000; text-decoration: none;">@wvellekoop</a>
                 </p>
                 <p style="margin: 16px 0 0; font-size: 16px; line-height: 1.6; color: #374151;">
-                  Mocht je nog iets nodig hebben, laat het me weten!<br><br>
-                  met vriendelijke groet,<br>
+                  Vragen of opmerkingen? Stuur me gerust een berichtje!<br><br>
+                  Groetjes,<br>
                   <strong>Wouter Vellekoop</strong>
                 </p>
               </div>
-              ` : ""}
 
               <!-- Logo -->
               <table role="presentation" style="width: 100%;">

@@ -31,7 +31,7 @@ export default function AdminDashboard() {
   const [slug, setSlug] = useState("");
   const [expiryDays, setExpiryDays] = useState(7);
   const [clientEmail, setClientEmail] = useState("");
-  const [customMessage, setCustomMessage] = useState("");
+  const [customMessage, setCustomMessage] = useState("Gefeliciteerd met jullie mooie dag! 🎉\n\nHierbij de foto's die ik voor jullie gemaakt heb. Ik hoop dat ze de dag nog een keer tot leven brengen.\n\nVoel je vrij om ze te delen met familie en vrienden!");
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploads, setUploads] = useState<Upload[]>([]);
@@ -762,16 +762,15 @@ export default function AdminDashboard() {
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium mb-1 block">Persoonlijk bericht (optioneel)</label>
+                  <label className="text-sm font-medium mb-1 block">Persoonlijk bericht</label>
                   <textarea
-                    placeholder="Hi,&#10;&#10;Hierbij de foto's van afgelopen avond.&#10;&#10;Mocht je nog iets nodig hebben, laat het me weten!&#10;&#10;met vriendelijke groet,&#10;Wouter Vellekoop"
                     value={customMessage}
                     onChange={(e) => setCustomMessage(e.target.value)}
                     rows={10}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                   <p className="text-xs text-gray-500 mt-1">
-                    Dit bericht wordt toegevoegd aan de email (downloadlink wordt automatisch toegevoegd)
+                    Dit bericht wordt toegevoegd aan de email. Hieronder komt automatisch de download link, sociale media en handtekening.
                   </p>
                 </div>
               </div>
