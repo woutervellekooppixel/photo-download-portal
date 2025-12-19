@@ -447,7 +447,7 @@ export default function DownloadGallery({
               </div>
             )}
 
-            {/* Fullscreen loading overlay with centered progress */}
+            {/* Fullscreen loading overlay with subtle progress */}
             {loadingThumbnails && (
                   <div 
                     className="fixed inset-0 z-50 transition-opacity duration-700" 
@@ -474,44 +474,29 @@ export default function DownloadGallery({
                       )}
                     </div>
                     
-                    {/* Dark overlay */}
-                    <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+                    {/* Subtle dark overlay */}
+                    <div className="absolute inset-0 bg-black/20" />
                     
-                    {/* Centered progress section */}
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="max-w-2xl w-full px-8">
-                        <div className="bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl p-12 space-y-8">
-                          {/* Project name */}
-                          <div className="text-center">
-                            <h2 className="text-4xl font-bold bg-gradient-to-r from-gray-900 via-gray-700 to-gray-900 bg-clip-text text-transparent mb-3">
-                              {metadata.slug.replace(/-/g, " ")}
-                            </h2>
-                            <p className="text-gray-600 text-xl">
-                              Je foto's worden voorbereid
-                            </p>
+                    {/* Minimal progress bar at bottom */}
+                    <div className="absolute bottom-0 left-0 right-0 p-8">
+                      <div className="max-w-md mx-auto space-y-3">
+                        {/* Thin progress bar */}
+                        <div className="relative w-full h-1 bg-white/20 rounded-full overflow-hidden backdrop-blur-sm">
+                          <div 
+                            className="absolute inset-y-0 left-0 bg-white rounded-full transition-all duration-500 ease-out"
+                            style={{ width: `${(thumbnailsLoaded / metadata.files.length) * 100}%` }}
+                          >
+                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent animate-shimmer" />
                           </div>
-                          
-                          {/* Progress bar */}
-                          <div className="space-y-5">
-                            <div className="relative w-full h-4 bg-gray-200 rounded-full overflow-hidden shadow-inner">
-                              <div 
-                                className="absolute inset-y-0 left-0 bg-gradient-to-r from-blue-500 via-blue-600 to-purple-600 rounded-full transition-all duration-500 ease-out shadow-lg"
-                                style={{ width: `${(thumbnailsLoaded / metadata.files.length) * 100}%` }}
-                              >
-                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer" />
-                              </div>
-                            </div>
-                            
-                            {/* Stats */}
-                            <div className="flex items-center justify-between text-base">
-                              <span className="font-bold text-gray-900 text-2xl">
-                                {Math.round((thumbnailsLoaded / metadata.files.length) * 100)}%
-                              </span>
-                              <span className="text-gray-600">
-                                {thumbnailsLoaded} van {metadata.files.length} foto's
-                              </span>
-                            </div>
-                          </div>
+                        </div>
+                        
+                        {/* Minimal stats */}
+                        <div className="flex items-center justify-between text-sm text-white/90">
+                          <span className="font-medium drop-shadow">
+                            {Math.round((thumbnailsLoaded / metadata.files.length) * 100)}%
+                          </span>
+                          <span className="drop-shadow">
+                            {thumbnailsLoaded} / {metadata.files.length}
                         </div>
                       </div>
                     </div>
