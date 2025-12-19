@@ -139,10 +139,10 @@ export default function DownloadGallery({
       
       setThumbnailUrls(urls);
       
-      // Wait a bit before fading out to ensure smooth transition
+      // Wait a bit longer before fading out for smooth transition
       setTimeout(() => {
         setLoadingThumbnails(false);
-      }, 500);
+      }, 800);
     };
 
     loadThumbnails();
@@ -396,7 +396,7 @@ export default function DownloadGallery({
         </div>
       </nav>
 
-      <div className="container mx-auto p-6 max-w-6xl">
+      <div className={`container mx-auto p-6 max-w-6xl transition-opacity duration-1000 ${loadingThumbnails ? 'opacity-0' : 'opacity-100'}`}>
         {/* Project Title */}
         <div className="mb-8 mt-4">
           <h1 className="text-3xl font-bold text-gray-900 text-center">
@@ -450,7 +450,7 @@ export default function DownloadGallery({
             {/* Fullscreen loading overlay with subtle progress */}
             {loadingThumbnails && (
                   <div 
-                    className="fixed inset-0 z-50 transition-opacity duration-700" 
+                    className="fixed inset-0 z-50 transition-opacity duration-1000" 
                     style={{ opacity: loadingThumbnails ? 1 : 0 }}
                   >
                     {/* Fullscreen preview image */}
