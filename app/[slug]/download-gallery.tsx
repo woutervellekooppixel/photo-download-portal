@@ -468,11 +468,7 @@ export default function DownloadGallery({
         {imageFiles.length > 0 && (
           <div className="mb-12">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                <span className="text-sm font-normal text-gray-500">
-                  ({imageFiles.length})
-                </span>
-              </h2>
+              <div></div>
               <Button
                 onClick={() => {
                   setIsSelectMode(!isSelectMode);
