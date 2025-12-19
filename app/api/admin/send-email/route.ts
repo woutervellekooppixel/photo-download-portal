@@ -129,8 +129,8 @@ export async function POST(request: NextRequest) {
               <table role="presentation" style="width: 100%;">
                 <tr>
                   <td align="center">
-                    <div style="color: #000000; font-size: 14px; font-weight: 700; letter-spacing: 2px;">
-                      WOUTER PHOTO
+                    <div style="color: #000000; font-size: 14px; letter-spacing: 2px;">
+                      <span style="font-weight: 700;">WOUTER</span><span style="font-weight: 400;">.</span><span style="font-weight: 300;">PHOTO</span>
                     </div>
                   </td>
                 </tr>
