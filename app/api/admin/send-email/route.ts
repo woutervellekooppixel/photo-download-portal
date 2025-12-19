@@ -56,11 +56,12 @@ export async function POST(request: NextRequest) {
     });
 
     // Build download URL
-    const downloadUrl = `${process.env.NEXT_PUBLIC_BASE_URL || "https://download.wouter.photo"}/${slug}`;
+    const downloadUrl = `https://download.wouter.photo/${slug}`;
 
     // Send email
     const { data, error } = await resend.emails.send({
-      from: "WOUTER.PHOTO <noreply@download.wouter.photo>",
+      from: "Wouter Vellekoop <info@woutervellekoop.nl>",
+      replyTo: "info@woutervellekoop.nl",
       to: recipientEmail,
       subject: "Je foto's staan klaar! 📷",
       html: `
@@ -191,11 +192,12 @@ export async function POST(request: NextRequest) {
     if (error) {
       console.error("Resend error:", error);
       return NextResponse.json(
-        { error: "Email verzenden mislukt" },
+        { error: "Email verzenden mislukt", details: error },
         { status: 500 }
       );
     }
 
+    console.log("Email sent successfully:", data?.id);
     return NextResponse.json({
       success: true,
       messageId: data?.id,
@@ -203,7 +205,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Error sending email:", error);
     return NextResponse.json(
-      { error: "Email verzenden mislukt" },
+      { error: "Email verzenden mislukt", details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     );
   }

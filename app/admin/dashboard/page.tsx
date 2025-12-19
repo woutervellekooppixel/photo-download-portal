@@ -481,8 +481,11 @@ export default function AdminDashboard() {
         }),
       });
 
+      const data = await res.json();
+
       if (!res.ok) {
-        throw new Error("Email verzenden mislukt");
+        console.error("Email send error:", data);
+        throw new Error(data.details || data.error || "Email verzenden mislukt");
       }
 
       toast({
@@ -495,6 +498,7 @@ export default function AdminDashboard() {
       setEmailRecipient("");
       setEmailMessage("");
     } catch (error) {
+      console.error("Email error:", error);
       toast({
         title: "Fout",
         description: error instanceof Error ? error.message : "Email verzenden mislukt",
