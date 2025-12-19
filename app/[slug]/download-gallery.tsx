@@ -95,7 +95,6 @@ export default function DownloadGallery({
       setLoadingThumbnails(true);
       setThumbnailsLoaded(0);
       const urls: Record<string, string> = {};
-      let loaded = 0;
       
       // Load preview image first for loading screen
       if (previewImage) {
@@ -113,13 +112,11 @@ export default function DownloadGallery({
         }
       }
       
-      // Then load all other files
-      for (const file of metadata.files) {
+      // Load all thumbnails in parallel for much faster loading
+      const loadPromises = metadata.files.map(async (file) => {
         // Skip preview image if already loaded
         if (previewImage && file.key === previewImage.key) {
-          loaded++;
-          setThumbnailsLoaded(loaded);
-          continue;
+          return { key: file.key, url: urls[file.key] };
         }
         
         try {
@@ -127,15 +124,30 @@ export default function DownloadGallery({
             `/api/thumbnail/${metadata.slug}?key=${encodeURIComponent(file.key)}`
           );
           const data = await response.json();
-          if (data.url) {
-            urls[file.key] = data.url;
-          }
+          return { key: file.key, url: data.url };
         } catch (error) {
           console.error("Failed to load thumbnail:", error);
+          return { key: file.key, url: null };
         }
-        loaded++;
-        setThumbnailsLoaded(loaded);
+      });
+      
+      // Wait for all thumbnails to load and update progress
+      let loaded = 0;
+      for (const promise of loadPromises) {
+        promise.then(() => {
+          loaded++;
+          setThumbnailsLoaded(loaded);
+        });
       }
+      
+      const results = await Promise.all(loadPromises);
+      
+      // Collect all URLs
+      results.forEach(result => {
+        if (result.url) {
+          urls[result.key] = result.url;
+        }
+      });
       
       setThumbnailUrls(urls);
       
