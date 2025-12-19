@@ -32,6 +32,7 @@ export interface UploadMetadata {
     type: string;
   }[];
   downloads: number;
+  previewImageKey?: string; // Optional: key of the image to show on loading screen
 }
 
 export interface MonthlyStats {

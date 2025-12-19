@@ -17,8 +17,9 @@ interface Upload {
   slug: string;
   createdAt: string;
   expiresAt: string;
-  files: { name: string; size: number }[];
+  files: { key: string; name: string; size: number; type: string }[];
   downloads: number;
+  previewImageKey?: string;
 }
 
 export default function AdminDashboard() {
@@ -35,6 +36,7 @@ export default function AdminDashboard() {
   const [selectedUploads, setSelectedUploads] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
   const [monthlyCost, setMonthlyCost] = useState<any>(null);
+  const [expandedUpload, setExpandedUpload] = useState<string | null>(null);
   const { toast } = useToast();
   const router = useRouter();
 
@@ -302,6 +304,38 @@ export default function AdminDashboard() {
       title: "Gekopieerd!",
       description: "Link staat in je klembord",
     });
+  };
+
+  const updatePreviewImage = async (uploadSlug: string, fileKey: string) => {
+    try {
+      const res = await fetch('/api/admin/update-preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slug: uploadSlug, previewImageKey: fileKey }),
+      });
+
+      if (res.ok) {
+        toast({
+          title: "Preview ingesteld!",
+          description: "De preview foto is bijgewerkt",
+        });
+        loadUploads();
+      } else {
+        throw new Error('Failed to update preview');
+      }
+    } catch (error) {
+      toast({
+        title: "Fout",
+        description: "Preview bijwerken mislukt",
+        variant: "destructive",
+      });
+    }
+  };
+  
+  // Helper function to check if file is an image
+  const isImage = (filename: string) => {
+    const ext = filename.toLowerCase().split('.').pop();
+    return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'heic', 'heif'].includes(ext || '');
   };
 
   const deleteUpload = async (uploadSlug: string) => {
@@ -744,7 +778,11 @@ export default function AdminDashboard() {
                     Nog geen uploads
                   </p>
                 ) : (
-                  uploads.map((upload) => (
+                  uploads.map((upload) => {
+                    const imageFiles = upload.files.filter(f => isImage(f.name));
+                    const isExpanded = expandedUpload === upload.slug;
+                    
+                    return (
                     <div
                       key={upload.slug}
                       className="border rounded-lg p-4 space-y-2"
@@ -756,14 +794,24 @@ export default function AdminDashboard() {
                           onChange={() => toggleSelectUpload(upload.slug)}
                           className="mt-1 h-4 w-4 rounded border-gray-300"
                         />
-                        <div>
+                        <div className="flex-1">
                           <h3 className="font-semibold">{upload.slug}</h3>
                           <p className="text-xs text-gray-500">
-                            {upload.files.length} foto's •{" "}
+                            {upload.files.length} bestand(en) •{" "}
                             {formatBytes(
                               upload.files.reduce((acc, f) => acc + f.size, 0)
                             )}
                           </p>
+                          {imageFiles.length > 0 && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => setExpandedUpload(isExpanded ? null : upload.slug)}
+                              className="mt-1 h-6 text-xs px-2"
+                            >
+                              {isExpanded ? '▼' : '▶'} {imageFiles.length} foto's - Kies preview
+                            </Button>
+                          )}
                         </div>
                         <div className="flex gap-1">
                           <Button
@@ -801,8 +849,47 @@ export default function AdminDashboard() {
                         <p>Verloopt: {formatDate(new Date(upload.expiresAt))}</p>
                         <p>Downloads: {upload.downloads}×</p>
                       </div>
+                      
+                      {/* Photo grid for preview selection */}
+                      {isExpanded && imageFiles.length > 0 && (
+                        <div className="mt-4 pt-4 border-t">
+                          <p className="text-sm font-medium mb-3">Selecteer een preview foto voor het loading screen:</p>
+                          <div className="grid grid-cols-4 gap-2">
+                            {imageFiles.map((file) => {
+                              const isPreview = upload.previewImageKey === file.key;
+                              return (
+                                <button
+                                  key={file.key}
+                                  onClick={() => updatePreviewImage(upload.slug, file.key)}
+                                  className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${
+                                    isPreview 
+                                      ? 'border-blue-500 ring-2 ring-blue-500 ring-offset-2' 
+                                      : 'border-gray-200 hover:border-blue-300'
+                                  }`}
+                                  title={file.name}
+                                >
+                                  <img
+                                    src={`/api/thumbnail/${upload.slug}?key=${encodeURIComponent(file.key)}`}
+                                    alt={file.name}
+                                    className="w-full h-full object-cover"
+                                  />
+                                  {isPreview && (
+                                    <div className="absolute inset-0 bg-blue-500/20 flex items-center justify-center">
+                                      <Check className="h-8 w-8 text-white drop-shadow" />
+                                    </div>
+                                  )}
+                                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2">
+                                    <p className="text-white text-xs truncate">{file.name.split('/').pop()}</p>
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
             </CardContent>
