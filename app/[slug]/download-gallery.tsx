@@ -151,10 +151,10 @@ export default function DownloadGallery({
       
       setThumbnailUrls(urls);
       
-      // Wait a bit longer before fading out for smooth transition
+      // Keep loading screen visible for a minimum time to showcase the photo
       setTimeout(() => {
         setLoadingThumbnails(false);
-      }, 800);
+      }, 2500);
     };
 
     loadThumbnails();
