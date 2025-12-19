@@ -194,37 +194,84 @@ export default function AdminDashboard() {
     setUploadProgress(0);
 
     try {
-      const formData = new FormData();
-      formData.append("slug", slug);
-      formData.append("expiryDays", expiryDays.toString());
-      files.forEach((file) => formData.append("files", file));
+      const uploadedFiles: Array<{key: string; name: string; size: number; type: string}> = [];
+      let totalBytes = 0;
+      let uploadedBytes = 0;
 
-      // Use XMLHttpRequest to track upload progress
-      await new Promise<void>((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
+      // Calculate total bytes
+      files.forEach(file => totalBytes += file.size);
 
-        xhr.upload.addEventListener('progress', (e) => {
-          if (e.lengthComputable) {
-            const percentComplete = Math.round((e.loaded / e.total) * 100);
-            setUploadProgress(percentComplete);
-          }
+      // Upload each file directly to R2
+      for (const file of files) {
+        // Get presigned URL
+        const presignedRes = await fetch('/api/admin/presigned-url', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            slug,
+            fileName: file.name,
+            fileType: file.type,
+          }),
         });
 
-        xhr.addEventListener('load', () => {
-          if (xhr.status === 200) {
-            resolve();
-          } else {
-            reject(new Error(xhr.responseText || 'Upload failed'));
-          }
+        if (!presignedRes.ok) {
+          throw new Error('Failed to get upload URL');
+        }
+
+        const { presignedUrl, key } = await presignedRes.json();
+
+        // Upload file directly to R2 with progress tracking
+        await new Promise<void>((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+
+          xhr.upload.addEventListener('progress', (e) => {
+            if (e.lengthComputable) {
+              const fileProgress = uploadedBytes + e.loaded;
+              const percentComplete = Math.round((fileProgress / totalBytes) * 100);
+              setUploadProgress(percentComplete);
+            }
+          });
+
+          xhr.addEventListener('load', () => {
+            if (xhr.status === 200) {
+              uploadedBytes += file.size;
+              resolve();
+            } else {
+              reject(new Error(`Upload failed for ${file.name}`));
+            }
+          });
+
+          xhr.addEventListener('error', () => {
+            reject(new Error(`Upload failed for ${file.name}`));
+          });
+
+          xhr.open('PUT', presignedUrl);
+          xhr.setRequestHeader('Content-Type', file.type);
+          xhr.send(file);
         });
 
-        xhr.addEventListener('error', () => {
-          reject(new Error('Upload failed'));
+        uploadedFiles.push({
+          key,
+          name: file.name,
+          size: file.size,
+          type: file.type,
         });
+      }
 
-        xhr.open('POST', '/api/admin/upload');
-        xhr.send(formData);
+      // Save metadata
+      const metadataRes = await fetch('/api/admin/save-metadata', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          slug,
+          files: uploadedFiles,
+          expiryDays,
+        }),
       });
+
+      if (!metadataRes.ok) {
+        throw new Error('Failed to save metadata');
+      }
 
       toast({
         title: "Succes!",
