@@ -165,6 +165,14 @@ export default function DownloadGallery({
   };
 
   const totalSize = metadata.files.reduce((acc, file) => acc + file.size, 0);
+  
+  // Format expiry date as dd-mm
+  const formatExpiryDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    return `${day}-${month}`;
+  };
 
   // Group images by folder
   const imagesByFolder = imageFiles.reduce((acc, file) => {
@@ -223,6 +231,8 @@ export default function DownloadGallery({
                 <span>{metadata.files.length} bestand{metadata.files.length !== 1 ? 'en' : ''}</span>
                 <span className="text-gray-400">•</span>
                 <span>{formatBytes(totalSize)}</span>
+                <span className="text-gray-400">•</span>
+                <span>Beschikbaar tot {formatExpiryDate(metadata.expiresAt)}</span>
               </div>
             </div>
 
@@ -270,13 +280,6 @@ export default function DownloadGallery({
       </nav>
 
       <div className="container mx-auto p-6 max-w-6xl">
-        {/* Info */}
-        <div className="text-center mb-8 mt-4">
-          <p className="text-sm text-gray-500">
-            Beschikbaar tot {formatDate(new Date(metadata.expiresAt))}
-          </p>
-        </div>
-
         {/* Photos Section */}
         {imageFiles.length > 0 && (
           <div className="mb-12">
