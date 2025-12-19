@@ -31,6 +31,9 @@ export default function DownloadGallery({
   const [downloadingFile, setDownloadingFile] = useState<string | null>(null);
   const [thumbnailUrls, setThumbnailUrls] = useState<Record<string, string>>({});
   const [collapsedFolders, setCollapsedFolders] = useState<Record<string, boolean>>({});
+  const [loadingThumbnails, setLoadingThumbnails] = useState(true);
+  const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
+  const [isSelectMode, setIsSelectMode] = useState(false);
 
   // Helper function to check if file is an image
   const isImage = (filename: string) => {
@@ -83,6 +86,7 @@ export default function DownloadGallery({
   // Load thumbnail URLs
   useEffect(() => {
     const loadThumbnails = async () => {
+      setLoadingThumbnails(true);
       const urls: Record<string, string> = {};
       for (const file of metadata.files) {
         try {
@@ -98,6 +102,7 @@ export default function DownloadGallery({
         }
       }
       setThumbnailUrls(urls);
+      setLoadingThumbnails(false);
     };
 
     loadThumbnails();
@@ -142,6 +147,66 @@ export default function DownloadGallery({
       console.error("Download failed:", error);
     } finally {
       setDownloadingFile(null);
+    }
+  };
+
+  const toggleSelectFile = (fileKey: string) => {
+    setSelectedFiles(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(fileKey)) {
+        newSet.delete(fileKey);
+      } else {
+        newSet.add(fileKey);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedFiles.size === imageFiles.length) {
+      setSelectedFiles(new Set());
+    } else {
+      setSelectedFiles(new Set(imageFiles.map(f => f.key)));
+    }
+  };
+
+  const downloadSelected = async () => {
+    if (selectedFiles.size === 0) return;
+    
+    setDownloading(true);
+    try {
+      // Download individually if only one file
+      if (selectedFiles.size === 1) {
+        const fileKey = Array.from(selectedFiles)[0];
+        const file = metadata.files.find(f => f.key === fileKey);
+        if (file) {
+          await downloadFile(file.key, file.name);
+        }
+      } else {
+        // Create a temporary metadata with only selected files
+        const selectedFilesList = metadata.files.filter(f => selectedFiles.has(f.key));
+        
+        // Use the all endpoint but we'll need to filter
+        const response = await fetch(`/api/download/${metadata.slug}/all`);
+        if (!response.ok) throw new Error('Download failed');
+        
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${metadata.slug}-selectie.zip`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      }
+      
+      setSelectedFiles(new Set());
+      setIsSelectMode(false);
+    } catch (error) {
+      console.error("Download failed:", error);
+    } finally {
+      setDownloading(false);
     }
   };
 
@@ -263,15 +328,28 @@ export default function DownloadGallery({
               </div>
               
               {/* Download Button */}
-              <Button
-                onClick={downloadAll}
-                disabled={downloading}
-                size="sm"
-              >
-                <Download className="mr-2 h-4 w-4" />
-                <span className="hidden sm:inline">{downloading ? "Voorbereiden..." : "Download Alles"}</span>
-                <span className="sm:hidden">Download</span>
-              </Button>
+              <div className="flex items-center gap-2">
+                {isSelectMode && selectedFiles.size > 0 && (
+                  <Button
+                    onClick={downloadSelected}
+                    disabled={downloading}
+                    size="sm"
+                    variant="outline"
+                  >
+                    <Download className="mr-2 h-4 w-4" />
+                    Download {selectedFiles.size}
+                  </Button>
+                )}
+                <Button
+                  onClick={downloadAll}
+                  disabled={downloading}
+                  size="sm"
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  <span className="hidden sm:inline">{downloading ? "Voorbereiden..." : "Download Alles"}</span>
+                  <span className="sm:hidden">Download</span>
+                </Button>
+              </div>
             </div>
           </div>
         </div>
@@ -288,11 +366,42 @@ export default function DownloadGallery({
         {/* Photos Section */}
         {imageFiles.length > 0 && (
           <div className="mb-12">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-              <span className="text-sm font-normal text-gray-500">
-                ({imageFiles.length})
-              </span>
-            </h2>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                <span className="text-sm font-normal text-gray-500">
+                  ({imageFiles.length})
+                </span>
+              </h2>
+              <Button
+                onClick={() => {
+                  setIsSelectMode(!isSelectMode);
+                  if (isSelectMode) {
+                    setSelectedFiles(new Set());
+                  }
+                }}
+                variant="outline"
+                size="sm"
+              >
+                {isSelectMode ? 'Annuleren' : 'Selecteren'}
+              </Button>
+            </div>
+
+            {isSelectMode && (
+              <div className="mb-4 flex items-center gap-4">
+                <Button
+                  onClick={toggleSelectAll}
+                  variant="outline"
+                  size="sm"
+                >
+                  {selectedFiles.size === imageFiles.length ? 'Deselecteer alles' : 'Selecteer alles'}
+                </Button>
+                {selectedFiles.size > 0 && (
+                  <span className="text-sm text-gray-600">
+                    {selectedFiles.size} foto{selectedFiles.size !== 1 ? "'s" : ''} geselecteerd
+                  </span>
+                )}
+              </div>
+            )}
 
             {imageFolders.map((folder) => (
               <div key={folder} className="mb-8">
@@ -305,56 +414,88 @@ export default function DownloadGallery({
                   </h3>
                 )}
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {imagesByFolder[folder].map((file, index) => {
-                    const displayName = file.name.split('/').pop() || file.name;
-                    return (
-                      <div
-                        key={`${file.key}-${index}`}
-                        className="group relative bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden"
-                      >
-                        {/* Thumbnail */}
-                        <div 
-                          className="aspect-square bg-gray-100 flex items-center justify-center overflow-hidden relative select-none"
-                          onContextMenu={(e) => e.preventDefault()}
-                          onDragStart={(e) => e.preventDefault()}
-                        >
-                          {thumbnailUrls[file.key] ? (
-                            <Image
-                              src={thumbnailUrls[file.key]}
-                              alt={file.name}
-                              fill
-                              className="object-cover pointer-events-none"
-                              sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                              loading="lazy"
-                              quality={75}
-                              draggable={false}
-                              onContextMenu={(e) => e.preventDefault()}
-                            />
-                          ) : (
-                            <ImageIcon className="h-12 w-12 text-gray-300" />
-                          )}
-                        </div>
-
-                        {/* File info */}
-                        <div className="p-3">
-                          <p className="text-sm font-medium truncate" title={file.name}>{displayName}</p>
-                          <p className="text-xs text-gray-500">{formatBytes(file.size)}</p>
-                        </div>
-
-                        {/* Download button overlay */}
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            onClick={() => downloadSingle(file.key, displayName)}
-                            disabled={downloadingFile === file.key}
-                          >
-                            <Download className="h-4 w-4" />
-                          </Button>
+                  {loadingThumbnails ? (
+                    // Skeleton loaders
+                    Array.from({ length: 8 }).map((_, i) => (
+                      <div key={`skeleton-${i}`} className="bg-white rounded-lg shadow-sm overflow-hidden animate-pulse">
+                        <div className="aspect-square bg-gray-200"></div>
+                        <div className="p-3 space-y-2">
+                          <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                          <div className="h-3 bg-gray-200 rounded w-1/2"></div>
                         </div>
                       </div>
-                    );
-                  })}
+                    ))
+                  ) : (
+                    imagesByFolder[folder].map((file, index) => {
+                      const displayName = file.name.split('/').pop() || file.name;
+                      const isSelected = selectedFiles.has(file.key);
+                      return (
+                        <div
+                          key={`${file.key}-${index}`}
+                          className="group relative bg-white rounded-lg shadow-sm hover:shadow-lg transition-all duration-200 overflow-hidden"
+                        >
+                          {/* Selection checkbox */}
+                          {isSelectMode && (
+                            <div className="absolute top-2 left-2 z-10">
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() => toggleSelectFile(file.key)}
+                                className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                              />
+                            </div>
+                          )}
+
+                          {/* Thumbnail with hover zoom */}
+                          <div 
+                            className="aspect-square bg-gray-100 flex items-center justify-center overflow-hidden relative select-none cursor-pointer"
+                            onContextMenu={(e) => e.preventDefault()}
+                            onDragStart={(e) => e.preventDefault()}
+                            onClick={() => isSelectMode && toggleSelectFile(file.key)}
+                          >
+                            {thumbnailUrls[file.key] ? (
+                              <Image
+                                src={thumbnailUrls[file.key]}
+                                alt={file.name}
+                                fill
+                                className="object-cover pointer-events-none transition-transform duration-300 group-hover:scale-110"
+                                sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                                loading="lazy"
+                                quality={75}
+                                draggable={false}
+                                onContextMenu={(e) => e.preventDefault()}
+                              />
+                            ) : (
+                              <ImageIcon className="h-12 w-12 text-gray-300" />
+                            )}
+                            
+                            {/* Hover overlay with file info */}
+                            {!isSelectMode && (
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col justify-end p-3">
+                                <p className="text-white text-sm font-medium truncate">{displayName}</p>
+                                <p className="text-white/80 text-xs">{formatBytes(file.size)}</p>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Download button overlay */}
+                          {!isSelectMode && (
+                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                              <Button
+                                size="sm"
+                                className="shadow-lg"
+                                onClick={() => downloadSingle(file.key, displayName)}
+                                disabled={downloadingFile === file.key}
+                              >
+                                <Download className="h-4 w-4 mr-2" />
+                                Download
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
                 </div>
               </div>
             ))}
