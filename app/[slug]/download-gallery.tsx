@@ -32,6 +32,7 @@ export default function DownloadGallery({
   const [thumbnailUrls, setThumbnailUrls] = useState<Record<string, string>>({});
   const [collapsedFolders, setCollapsedFolders] = useState<Record<string, boolean>>({});
   const [loadingThumbnails, setLoadingThumbnails] = useState(true);
+  const [thumbnailsLoaded, setThumbnailsLoaded] = useState(0);
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
   const [isSelectMode, setIsSelectMode] = useState(false);
 
@@ -87,7 +88,10 @@ export default function DownloadGallery({
   useEffect(() => {
     const loadThumbnails = async () => {
       setLoadingThumbnails(true);
+      setThumbnailsLoaded(0);
       const urls: Record<string, string> = {};
+      let loaded = 0;
+      
       for (const file of metadata.files) {
         try {
           const response = await fetch(
@@ -100,9 +104,16 @@ export default function DownloadGallery({
         } catch (error) {
           console.error("Failed to load thumbnail:", error);
         }
+        loaded++;
+        setThumbnailsLoaded(loaded);
       }
+      
       setThumbnailUrls(urls);
-      setLoadingThumbnails(false);
+      
+      // Wait a bit before fading out to ensure smooth transition
+      setTimeout(() => {
+        setLoadingThumbnails(false);
+      }, 500);
     };
 
     loadThumbnails();
@@ -361,6 +372,9 @@ export default function DownloadGallery({
         <div className="mb-8 mt-4">
           <h1 className="text-3xl font-bold text-gray-900 text-center">
             {metadata.slug.replace(/-/g, " ")}
+            <span className="ml-3 text-3xl text-gray-500">
+              ({imageFiles.length})
+            </span>
           </h1>
         </div>
 
@@ -414,20 +428,47 @@ export default function DownloadGallery({
                     </span>
                   </h3>
                 )}
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {loadingThumbnails ? (
-                    // Skeleton loaders
-                    Array.from({ length: 8 }).map((_, i) => (
-                      <div key={`skeleton-${i}`} className="bg-white rounded-lg shadow-sm overflow-hidden animate-pulse">
-                        <div className="aspect-square bg-gray-200"></div>
-                        <div className="p-3 space-y-2">
-                          <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                          <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                {/* Loading overlay with large photo and progress bar */}
+                {loadingThumbnails && (
+                  <div className="fixed inset-0 z-50 bg-white flex items-center justify-center transition-opacity duration-500" style={{ opacity: loadingThumbnails ? 1 : 0 }}>
+                    <div className="max-w-2xl w-full px-6">
+                      {/* Large preview image */}
+                      <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden mb-8 shadow-2xl">
+                        {imagesByFolder[folder][0] && thumbnailUrls[imagesByFolder[folder][0].key] ? (
+                          <Image
+                            src={thumbnailUrls[imagesByFolder[folder][0].key]}
+                            alt="Loading preview"
+                            fill
+                            className="object-cover"
+                            sizes="(max-width: 672px) 100vw, 672px"
+                            priority
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <ImageIcon className="h-24 w-24 text-gray-300" />
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Progress bar */}
+                      <div className="space-y-3">
+                        <div className="flex justify-between text-sm text-gray-600">
+                          <span>Foto's laden...</span>
+                          <span>{thumbnailsLoaded} / {metadata.files.length}</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                          <div 
+                            className="bg-blue-600 h-2 rounded-full transition-all duration-300 ease-out"
+                            style={{ width: `${(thumbnailsLoaded / metadata.files.length) * 100}%` }}
+                          />
                         </div>
                       </div>
-                    ))
-                  ) : (
-                    imagesByFolder[folder].map((file, index) => {
+                    </div>
+                  </div>
+                )}
+                
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {imagesByFolder[folder].map((file, index) => {
                       const displayName = file.name.split('/').pop() || file.name;
                       const isSelected = selectedFiles.has(file.key);
                       return (
@@ -496,7 +537,7 @@ export default function DownloadGallery({
                         </div>
                       );
                     })
-                  )}
+                  }
                 </div>
               </div>
             ))}
