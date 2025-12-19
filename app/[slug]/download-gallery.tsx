@@ -497,6 +497,7 @@ export default function DownloadGallery({
                           </span>
                           <span className="drop-shadow">
                             {thumbnailsLoaded} / {metadata.files.length}
+                          </span>
                         </div>
                       </div>
                     </div>
