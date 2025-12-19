@@ -122,7 +122,7 @@ export async function POST(request: NextRequest) {
               <!-- CTA Button -->
               <table role="presentation" style="width: 100%; margin-bottom: 32px;">
                 <tr>
-                  <td align="center">
+                  <td align="left">
                     <a href="${downloadUrl}" style="display: inline-block; padding: 16px 48px; background: #000000; color: #ffffff; text-decoration: none; border-radius: 8px; font-size: 16px; font-weight: 600;">
                       📸 Download foto's
                     </a>

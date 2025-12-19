@@ -31,7 +31,7 @@ export default function AdminDashboard() {
   const [slug, setSlug] = useState("");
   const [expiryDays, setExpiryDays] = useState(7);
   const [clientEmail, setClientEmail] = useState("");
-  const [customMessage, setCustomMessage] = useState("Hi,\n\nHierbij de foto's van afgelopen avond.\n\nMocht je nog iets nodig hebben, laat het gerust weten.");
+  const [customMessage, setCustomMessage] = useState("Hi,\n\nHierbij de foto's van afgelopen avond.");
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploads, setUploads] = useState<Upload[]>([]);
@@ -363,7 +363,7 @@ export default function AdminDashboard() {
       setTitle("");
       setSlug("");
       setClientEmail("");
-      setCustomMessage("Hi,\n\nHierbij de foto's van afgelopen avond.\n\nMocht je nog iets nodig hebben, laat het gerust weten.");
+      setCustomMessage("Hi,\n\nHierbij de foto's van afgelopen avond.");
       setUploadProgress(0);
       loadUploads();
     } catch (error) {
