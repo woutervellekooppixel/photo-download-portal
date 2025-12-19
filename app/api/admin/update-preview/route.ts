@@ -1,18 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getMetadata, saveMetadata } from "@/lib/r2";
-import { cookies } from "next/headers";
+import { requireAdminAuth } from "@/lib/auth";
 
 export async function POST(req: NextRequest) {
   // Check authentication
-  const cookieStore = await cookies();
-  const authCookie = cookieStore.get("admin-auth");
-
-  if (!authCookie || authCookie.value !== "authenticated") {
-    return NextResponse.json(
-      { error: "Unauthorized" },
-      { status: 401 }
-    );
-  }
+  const authError = await requireAdminAuth();
+  if (authError) return authError;
 
   try {
     const { slug, previewImageKey } = await req.json();
