@@ -5,14 +5,14 @@ import { downloadRateLimit } from '@/lib/rateLimit';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   // Rate limiting
   const rateLimitResponse = downloadRateLimit(request);
   if (rateLimitResponse) return rateLimitResponse;
 
   try {
-    const { slug } = params;
+    const { slug } = await params;
     const { searchParams } = new URL(request.url);
     const folderPath = searchParams.get('path');
 
