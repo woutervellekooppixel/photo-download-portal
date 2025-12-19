@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Upload, X, Copy, Trash2, LogOut, Check, ExternalLink } from "lucide-react";
+import { Upload, X, Copy, Trash2, LogOut, Check, ExternalLink, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,12 +20,16 @@ interface Upload {
   files: { key: string; name: string; size: number; type: string }[];
   downloads: number;
   previewImageKey?: string;
+  clientEmail?: string;
+  customMessage?: string;
 }
 
 export default function AdminDashboard() {
   const [files, setFiles] = useState<FileWithPreview[]>([]);
   const [slug, setSlug] = useState("");
   const [expiryDays, setExpiryDays] = useState(7);
+  const [clientEmail, setClientEmail] = useState("");
+  const [customMessage, setCustomMessage] = useState("");
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploads, setUploads] = useState<Upload[]>([]);
@@ -38,6 +42,11 @@ export default function AdminDashboard() {
   const [monthlyCost, setMonthlyCost] = useState<any>(null);
   const [expandedUpload, setExpandedUpload] = useState<string | null>(null);
   const [thumbnailUrls, setThumbnailUrls] = useState<Record<string, string>>({});
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
+  const [selectedUploadForEmail, setSelectedUploadForEmail] = useState<Upload | null>(null);
+  const [emailRecipient, setEmailRecipient] = useState("");
+  const [emailMessage, setEmailMessage] = useState("");
+  const [sendingEmail, setSendingEmail] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
 
@@ -300,6 +309,8 @@ export default function AdminDashboard() {
           slug,
           files: uploadedFiles,
           expiryDays,
+          clientEmail: clientEmail.trim() || undefined,
+          customMessage: customMessage.trim() || undefined,
         }),
       });
 
@@ -313,6 +324,8 @@ export default function AdminDashboard() {
       });
       setFiles([]);
       setSlug("");
+      setClientEmail("");
+      setCustomMessage("");
       setUploadProgress(0);
       loadUploads();
     } catch (error) {
@@ -436,6 +449,60 @@ export default function AdminDashboard() {
     });
 
     loadUploads();
+  };
+
+  const openEmailDialog = (upload: Upload) => {
+    setSelectedUploadForEmail(upload);
+    setEmailRecipient(upload.clientEmail || "");
+    setEmailMessage(upload.customMessage || "");
+    setEmailDialogOpen(true);
+  };
+
+  const sendEmail = async () => {
+    if (!selectedUploadForEmail || !emailRecipient) {
+      toast({
+        title: "Fout",
+        description: "Email adres is verplicht",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSendingEmail(true);
+
+    try {
+      const res = await fetch("/api/admin/send-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          slug: selectedUploadForEmail.slug,
+          recipientEmail: emailRecipient,
+          customMessage: emailMessage,
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Email verzenden mislukt");
+      }
+
+      toast({
+        title: "Email verzonden!",
+        description: `Email succesvol verzonden naar ${emailRecipient}`,
+      });
+
+      setEmailDialogOpen(false);
+      setSelectedUploadForEmail(null);
+      setEmailRecipient("");
+      setEmailMessage("");
+    } catch (error) {
+      toast({
+        title: "Fout",
+        description: error instanceof Error ? error.message : "Email verzenden mislukt",
+        variant: "destructive",
+      });
+    } finally {
+      setSendingEmail(false);
+    }
   };
 
   const generateSlugSuggestions = (fileName: string) => {
@@ -657,6 +724,35 @@ export default function AdminDashboard() {
                 </p>
               </div>
 
+              <div className="space-y-3">
+                <div>
+                  <label className="text-sm font-medium mb-1 block">Client email (optioneel)</label>
+                  <Input
+                    type="email"
+                    placeholder="naam@voorbeeld.nl"
+                    value={clientEmail}
+                    onChange={(e) => setClientEmail(e.target.value)}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Voor het verzenden van de download link naar je klant
+                  </p>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium mb-1 block">Persoonlijk bericht (optioneel)</label>
+                  <textarea
+                    placeholder="Hoi! Hier zijn de foto's van onze fotoshoot..."
+                    value={customMessage}
+                    onChange={(e) => setCustomMessage(e.target.value)}
+                    rows={4}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Dit bericht wordt toegevoegd aan de email
+                  </p>
+                </div>
+              </div>
+
               <div className="border-2 border-dashed rounded-lg p-8 text-center border-gray-300 bg-white">
                 <Upload className="h-12 w-12 mx-auto mb-4 text-gray-400" />
                 <p className="text-sm text-gray-600 mb-4">
@@ -857,6 +953,14 @@ export default function AdminDashboard() {
                           <Button
                             size="sm"
                             variant="outline"
+                            onClick={() => openEmailDialog(upload)}
+                            title="Verstuur email"
+                          >
+                            <Mail className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
                             onClick={() => copyLink(upload.slug)}
                             title="Kopieer link"
                           >
@@ -992,6 +1096,104 @@ export default function AdminDashboard() {
           </Card>
         )}
       </div>
+
+      {/* Email Dialog */}
+      {emailDialogOpen && selectedUploadForEmail && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-semibold">Verstuur Email</h2>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Upload: {selectedUploadForEmail.slug}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setEmailDialogOpen(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="text-sm font-medium block mb-2">
+                  Ontvanger email *
+                </label>
+                <Input
+                  type="email"
+                  placeholder="naam@voorbeeld.nl"
+                  value={emailRecipient}
+                  onChange={(e) => setEmailRecipient(e.target.value)}
+                  disabled={sendingEmail}
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium block mb-2">
+                  Persoonlijk bericht (optioneel)
+                </label>
+                <textarea
+                  placeholder="Hoi! Hier zijn de foto's van onze fotoshoot..."
+                  value={emailMessage}
+                  onChange={(e) => setEmailMessage(e.target.value)}
+                  rows={6}
+                  disabled={sendingEmail}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Dit bericht wordt toegevoegd aan de email
+                </p>
+              </div>
+
+              <div className="bg-gray-50 p-4 rounded-lg space-y-2 text-sm">
+                <h3 className="font-medium text-gray-900">Email bevat:</h3>
+                <ul className="space-y-1 text-gray-600">
+                  <li>✓ Preview foto als header</li>
+                  <li>✓ Persoonlijk bericht (als ingevuld)</li>
+                  <li>✓ {selectedUploadForEmail.files.length} foto's • {formatBytes(
+                    selectedUploadForEmail.files.reduce((acc, f) => acc + f.size, 0)
+                  )}</li>
+                  <li>✓ Download link met grote knop</li>
+                  <li>✓ Vervaldatum: {formatDate(new Date(selectedUploadForEmail.expiresAt))}</li>
+                  <li>✓ WOUTER.PHOTO branding</li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="p-6 border-t bg-gray-50 flex gap-3">
+              <Button
+                variant="outline"
+                onClick={() => setEmailDialogOpen(false)}
+                disabled={sendingEmail}
+                className="flex-1"
+              >
+                Annuleren
+              </Button>
+              <Button
+                onClick={sendEmail}
+                disabled={sendingEmail || !emailRecipient}
+                className="flex-1"
+              >
+                {sendingEmail ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Bezig...
+                  </>
+                ) : (
+                  <>
+                    <Mail className="h-4 w-4 mr-2" />
+                    Verstuur Email
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
