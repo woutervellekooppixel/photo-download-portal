@@ -37,6 +37,7 @@ export default function AdminDashboard() {
   const [deleting, setDeleting] = useState(false);
   const [monthlyCost, setMonthlyCost] = useState<any>(null);
   const [expandedUpload, setExpandedUpload] = useState<string | null>(null);
+  const [thumbnailUrls, setThumbnailUrls] = useState<Record<string, string>>({});
   const { toast } = useToast();
   const router = useRouter();
 
@@ -45,6 +46,37 @@ export default function AdminDashboard() {
     checkOrphanedUploads();
     loadMonthlyCost();
   }, []);
+
+  // Load thumbnails when upload is expanded
+  useEffect(() => {
+    const loadThumbnailsForUpload = async () => {
+      if (!expandedUpload) return;
+      
+      const upload = uploads.find(u => u.slug === expandedUpload);
+      if (!upload) return;
+      
+      const imageFiles = upload.files.filter(f => isImage(f.name));
+      
+      for (const file of imageFiles) {
+        // Skip if already loaded
+        if (thumbnailUrls[file.key]) continue;
+        
+        try {
+          const res = await fetch(`/api/thumbnail/${upload.slug}?key=${encodeURIComponent(file.key)}`);
+          if (res.ok) {
+            const data = await res.json();
+            if (data.url) {
+              setThumbnailUrls(prev => ({ ...prev, [file.key]: data.url }));
+            }
+          }
+        } catch (error) {
+          console.error('Failed to load thumbnail:', error);
+        }
+      }
+    };
+    
+    loadThumbnailsForUpload();
+  }, [expandedUpload, uploads]);
 
   const loadUploads = async () => {
     const res = await fetch("/api/admin/uploads");
@@ -857,6 +889,8 @@ export default function AdminDashboard() {
                           <div className="grid grid-cols-4 gap-2">
                             {imageFiles.map((file) => {
                               const isPreview = upload.previewImageKey === file.key;
+                              const thumbnailUrl = thumbnailUrls[file.key];
+                              
                               return (
                                 <button
                                   key={file.key}
@@ -868,11 +902,21 @@ export default function AdminDashboard() {
                                   }`}
                                   title={file.name}
                                 >
-                                  <img
-                                    src={`/api/thumbnail/${upload.slug}?key=${encodeURIComponent(file.key)}`}
-                                    alt={file.name}
-                                    className="w-full h-full object-cover"
-                                  />
+                                  {thumbnailUrl ? (
+                                    <img
+                                      src={thumbnailUrl}
+                                      alt={file.name}
+                                      className="w-full h-full object-cover"
+                                      onError={(e) => {
+                                        // Hide broken images
+                                        e.currentTarget.style.display = 'none';
+                                      }}
+                                    />
+                                  ) : (
+                                    <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-400"></div>
+                                    </div>
+                                  )}
                                   {isPreview && (
                                     <div className="absolute inset-0 bg-blue-500/20 flex items-center justify-center">
                                       <Check className="h-8 w-8 text-white drop-shadow" />
