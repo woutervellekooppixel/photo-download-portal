@@ -31,7 +31,7 @@ export default function AdminDashboard() {
   const [slug, setSlug] = useState("");
   const [expiryDays, setExpiryDays] = useState(7);
   const [clientEmail, setClientEmail] = useState("");
-  const [customMessage, setCustomMessage] = useState("Hi,\n\nHierbij de foto's van afgelopen avond.\n\");
+  const [customMessage, setCustomMessage] = useState("Hi,\n\nHierbij de foto's van afgelopen avond.\n\nMocht je nog iets nodig hebben, laat het gerust weten.");
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploads, setUploads] = useState<Upload[]>([]);
