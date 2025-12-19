@@ -485,7 +485,10 @@ export default function AdminDashboard() {
 
       if (!res.ok) {
         console.error("Email send error:", data);
-        throw new Error(data.details || data.error || "Email verzenden mislukt");
+        const errorMsg = typeof data.details === 'string' 
+          ? data.details 
+          : JSON.stringify(data.details || data.error || "Email verzenden mislukt");
+        throw new Error(errorMsg);
       }
 
       toast({
@@ -499,9 +502,14 @@ export default function AdminDashboard() {
       setEmailMessage("");
     } catch (error) {
       console.error("Email error:", error);
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : typeof error === 'object' 
+          ? JSON.stringify(error) 
+          : String(error);
       toast({
         title: "Fout",
-        description: error instanceof Error ? error.message : "Email verzenden mislukt",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
