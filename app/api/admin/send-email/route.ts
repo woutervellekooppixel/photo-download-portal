@@ -107,9 +107,8 @@ export async function POST(request: NextRequest) {
               ` : `
               <div style="margin-bottom: 32px; background-color: #ffffff;">
                 <p style="margin: 0; font-size: 16px; line-height: 1.6; color: #374151;">
-                  Hey! Wat fijn dat je de foto's wilt bekijken 😊<br><br>
-                  Ik heb ze voor je klaar gezet en je kunt ze hieronder downloaden. De foto's blijven een tijdje beschikbaar, dus je hebt alle tijd om ze rustig te bekijken en te bewaren.<br><br>
-                  Veel plezier ermee!
+                  Hi,<br><br>
+                  Hierbij de foto's van afgelopen avond.<br><br>
                 </p>
               </div>
               `}
@@ -119,11 +118,27 @@ export async function POST(request: NextRequest) {
                 <tr>
                   <td align="center">
                     <a href="${downloadUrl}" style="display: inline-block; padding: 16px 48px; background: #000000; color: #ffffff; text-decoration: none; border-radius: 8px; font-size: 16px; font-weight: 600;">
-                      Download foto's
+                      📸 Download foto's
                     </a>
                   </td>
                 </tr>
               </table>
+
+              ${!customMessage ? `
+              <!-- Social Links (only when no custom message) -->
+              <div style="margin-bottom: 32px; background-color: #ffffff;">
+                <p style="margin: 0 0 12px; font-size: 16px; line-height: 1.6; color: #374151;">
+                  <strong>Mijn socials:</strong><br>
+                  Instagram: <a href="https://instagram.com/woutervellekoop" style="color: #000000; text-decoration: none;">@woutervellekoop</a><br>
+                  Facebook: <a href="https://facebook.com/wvellekoop" style="color: #000000; text-decoration: none;">@wvellekoop</a>
+                </p>
+                <p style="margin: 16px 0 0; font-size: 16px; line-height: 1.6; color: #374151;">
+                  Mocht je nog iets nodig hebben, laat het me weten!<br><br>
+                  met vriendelijke groet,<br>
+                  <strong>Wouter Vellekoop</strong>
+                </p>
+              </div>
+              ` : ""}
 
               <!-- Logo -->
               <table role="presentation" style="width: 100%;">
