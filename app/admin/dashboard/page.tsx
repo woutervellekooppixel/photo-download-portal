@@ -24,6 +24,7 @@ interface Upload {
   clientEmail?: string;
   customMessage?: string;
   ratings?: Record<string, boolean>;
+  ratingsEnabled?: boolean;
 }
 
 export default function AdminDashboard() {
@@ -33,6 +34,7 @@ export default function AdminDashboard() {
   const [expiryDays, setExpiryDays] = useState(7);
   const [clientEmail, setClientEmail] = useState("");
   const [customMessage, setCustomMessage] = useState("Hi,\n\nHierbij de foto's van afgelopen avond.");
+  const [ratingsEnabled, setRatingsEnabled] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploads, setUploads] = useState<Upload[]>([]);
@@ -315,6 +317,7 @@ export default function AdminDashboard() {
           expiryDays,
           clientEmail: clientEmail.trim() || undefined,
           customMessage: customMessage.trim() || undefined,
+          ratingsEnabled,
         }),
       });
 
@@ -365,6 +368,7 @@ export default function AdminDashboard() {
       setSlug("");
       setClientEmail("");
       setCustomMessage("Hi,\n\nHierbij de foto's van afgelopen avond.");
+      setRatingsEnabled(false);
       setUploadProgress(0);
       loadUploads();
     } catch (error) {
@@ -806,6 +810,21 @@ export default function AdminDashboard() {
                   />
                   <p className="text-xs text-gray-500 mt-1">
                     Dit bericht wordt toegevoegd aan de email. Hieronder komt automatisch de download link, sociale media en handtekening.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="flex items-center gap-2 text-sm font-medium cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={ratingsEnabled}
+                      onChange={(e) => setRatingsEnabled(e.target.checked)}
+                      className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span>Foto waardering inschakelen</span>
+                  </label>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Laat klanten foto's beoordelen met een sterretje
                   </p>
                 </div>
               </div>

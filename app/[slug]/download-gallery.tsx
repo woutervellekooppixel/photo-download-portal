@@ -598,7 +598,7 @@ export default function DownloadGallery({
                           )}
 
                           {/* Star rating - top right */}
-                          {!isSelectMode && (
+                          {!isSelectMode && metadata.ratingsEnabled && (
                             <button
                               onClick={(e) => toggleRating(file.key, e)}
                               className="absolute top-2 right-2 z-10 p-1.5 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-sm transition-all duration-200 group/star"

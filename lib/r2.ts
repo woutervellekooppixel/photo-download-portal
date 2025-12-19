@@ -37,6 +37,7 @@ export interface UploadMetadata {
   clientEmail?: string; // Optional: client email for sending notifications
   customMessage?: string; // Optional: custom message to include in email
   ratings?: Record<string, boolean>; // Optional: client ratings for photos (fileKey -> rated)
+  ratingsEnabled?: boolean; // Optional: allow clients to rate photos
 }
 
 export interface MonthlyStats {
