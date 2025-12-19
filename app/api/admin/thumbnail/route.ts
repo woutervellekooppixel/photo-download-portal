@@ -41,7 +41,8 @@ export async function GET(request: NextRequest) {
     // Get presigned URL (valid for 1 hour) - no expiry check for admin
     const url = await getSignedDownloadUrl(fileKey, 3600);
 
-    return NextResponse.json({ url });
+    // Redirect to the presigned URL instead of returning JSON
+    return NextResponse.redirect(url);
   } catch (error) {
     console.error("Admin thumbnail error:", error);
     return NextResponse.json(
