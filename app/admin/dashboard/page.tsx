@@ -15,6 +15,7 @@ interface FileWithPreview extends File {
 
 interface Upload {
   slug: string;
+  title?: string;
   createdAt: string;
   expiresAt: string;
   files: { key: string; name: string; size: number; type: string }[];
@@ -26,6 +27,7 @@ interface Upload {
 
 export default function AdminDashboard() {
   const [files, setFiles] = useState<FileWithPreview[]>([]);
+  const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
   const [expiryDays, setExpiryDays] = useState(7);
   const [clientEmail, setClientEmail] = useState("");
@@ -227,7 +229,7 @@ export default function AdminDashboard() {
     if (!slug || files.length === 0) {
       toast({
         title: "Fout",
-        description: "Vul een slug in en selecteer bestanden",
+        description: "Vul een titel/slug in en selecteer bestanden",
         variant: "destructive",
       });
       return;
@@ -307,6 +309,7 @@ export default function AdminDashboard() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           slug,
+          title: title.trim() || undefined,
           files: uploadedFiles,
           expiryDays,
           clientEmail: clientEmail.trim() || undefined,
@@ -320,9 +323,10 @@ export default function AdminDashboard() {
 
       toast({
         title: "Succes!",
-        description: `Upload succesvol: ${slug}`,
+        description: `Upload succesvol: ${title || slug}`,
       });
       setFiles([]);
+      setTitle("");
       setSlug("");
       setClientEmail("");
       setCustomMessage("");
@@ -652,33 +656,40 @@ export default function AdminDashboard() {
             <CardContent className="space-y-4">
               <div>
                 <label className="text-sm font-medium mb-2 block">
-                  Custom URL
+                  Transfer titel *
                 </label>
                 <Input
-                  placeholder="klant-opdracht"
+                  placeholder="Fotoshoot Emma & Tom"
+                  value={title}
+                  onChange={(e) => {
+                    const newTitle = e.target.value;
+                    setTitle(newTitle);
+                    // Auto-generate slug from title
+                    if (newTitle) {
+                      const autoSlug = newTitle
+                        .toLowerCase()
+                        .replace(/[^a-z0-9]+/g, '-')
+                        .replace(/^-|-$/g, '');
+                      setSlug(autoSlug);
+                    }
+                  }}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Deze titel zie je terug in de email en het onderwerp
+                </p>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium mb-2 block">
+                  Custom URL (automatisch gegenereerd)
+                </label>
+                <Input
+                  placeholder="fotoshoot-emma-tom"
                   value={slug}
                   onChange={(e) => {
                     setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""));
-                    setSlugSuggestions([]);
                   }}
                 />
-                {slugSuggestions.length > 0 && !slug && (
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    <span className="text-xs text-gray-500">Suggesties:</span>
-                    {slugSuggestions.map((suggestion) => (
-                      <button
-                        key={suggestion}
-                        onClick={() => {
-                          setSlug(suggestion);
-                          setSlugSuggestions([]);
-                        }}
-                        className="text-xs px-2 py-1 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition-colors"
-                      >
-                        {suggestion}
-                      </button>
-                    ))}
-                  </div>
-                )}
                 {slug && (
                   <p className="text-xs text-gray-500 mt-1">
                     Link: download.wouter.photo/{slug}
@@ -935,7 +946,12 @@ export default function AdminDashboard() {
                           className="mt-1 h-4 w-4 rounded border-gray-300"
                         />
                         <div className="flex-1">
-                          <h3 className="font-semibold">{upload.slug}</h3>
+                          {upload.title && (
+                            <h3 className="font-semibold text-base">{upload.title}</h3>
+                          )}
+                          <p className={`text-sm ${upload.title ? 'text-gray-500' : 'font-semibold'}`}>
+                            {upload.slug}
+                          </p>
                           <p className="text-xs text-gray-500">
                             {upload.files.length} bestand(en) •{" "}
                             {formatBytes(

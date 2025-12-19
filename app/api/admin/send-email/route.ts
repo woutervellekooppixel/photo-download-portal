@@ -58,89 +58,109 @@ export async function POST(request: NextRequest) {
     // Build download URL
     const downloadUrl = `https://download.wouter.photo/${slug}`;
 
+    // Get title for subject and email
+    const transferTitle = metadata.title || slug;
+    const emailSubject = metadata.title 
+      ? `${metadata.title} - Je foto's staan klaar! 📷`
+      : "Je foto's staan klaar! 📷";
+
     // Send email
     const { data, error } = await resend.emails.send({
       from: "Wouter Vellekoop <noreply@wouter.photo>",
       replyTo: "info@woutervellekoop.nl",
       to: recipientEmail,
-      subject: "Je foto's staan klaar! 📷",
+      subject: emailSubject,
       html: `
 <!DOCTYPE html>
 <html lang="nl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Je foto's staan klaar</title>
+  <title>${transferTitle}</title>
 </head>
-<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f9fafb;">
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #0f172a;">
   <table role="presentation" style="width: 100%; border-collapse: collapse;">
     <tr>
-      <td align="center" style="padding: 40px 20px;">
-        <table role="presentation" style="max-width: 600px; width: 100%; border-collapse: collapse; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);">
+      <td align="center" style="padding: 60px 20px;">
+        <table role="presentation" style="max-width: 650px; width: 100%; border-collapse: collapse; background-color: #ffffff; border-radius: 24px; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);">
           
           ${previewImageUrl ? `
-          <!-- Hero Image -->
+          <!-- Hero Image with Overlay -->
           <tr>
-            <td style="padding: 0;">
-              <img src="${previewImageUrl}" alt="Preview" style="width: 100%; height: auto; display: block; max-height: 400px; object-fit: cover;" />
+            <td style="padding: 0; position: relative;">
+              <div style="position: relative; width: 100%; max-height: 400px; overflow: hidden;">
+                <img src="${previewImageUrl}" alt="Preview" style="width: 100%; height: auto; display: block; max-height: 400px; object-fit: cover;" />
+                <div style="position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(to top, rgba(0,0,0,0.7), transparent); padding: 24px;">
+                  <h2 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 700; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">${transferTitle}</h2>
+                </div>
+              </div>
             </td>
           </tr>
-          ` : ""}
+          ` : `
+          <!-- Title without image -->
+          <tr>
+            <td style="padding: 40px 40px 0;">
+              <h2 style="margin: 0; color: #111827; font-size: 32px; font-weight: 700;">${transferTitle}</h2>
+              <div style="height: 3px; width: 80px; background: linear-gradient(to right, #3b82f6, #8b5cf6); margin: 16px 0 0; border-radius: 2px;"></div>
+            </td>
+          </tr>
+          `}
           
           <!-- Content -->
           <tr>
-            <td style="padding: 48px 40px;">
+            <td style="padding: 40px;">
               
               <!-- Logo/Branding -->
               <table role="presentation" style="width: 100%; margin-bottom: 32px;">
                 <tr>
                   <td align="center">
-                    <h1 style="margin: 0; font-size: 28px; font-weight: 700; letter-spacing: 2px; color: #111827;">WOUTER.PHOTO</h1>
-                    <div style="height: 2px; width: 60px; background: linear-gradient(to right, #3b82f6, #8b5cf6); margin: 12px auto 0;"></div>
+                    <div style="display: inline-block; padding: 12px 24px; background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%); border-radius: 8px; margin-bottom: 8px;">
+                      <span style="color: #ffffff; font-size: 18px; font-weight: 700; letter-spacing: 3px;">WOUTER.PHOTO</span>
+                    </div>
                   </td>
                 </tr>
               </table>
 
-              <!-- Greeting -->
-              <h2 style="margin: 0 0 24px; font-size: 24px; font-weight: 600; color: #111827; line-height: 1.3;">
-                Je foto's staan klaar! 📷
-              </h2>
-
               ${customMessage ? `
               <!-- Custom Message -->
-              <div style="background-color: #f9fafb; border-left: 4px solid #3b82f6; padding: 20px 24px; margin-bottom: 32px; border-radius: 4px;">
-                <p style="margin: 0; font-size: 16px; line-height: 1.6; color: #374151; white-space: pre-wrap;">${customMessage}</p>
+              <div style="background: linear-gradient(135deg, #eff6ff 0%, #f5f3ff 100%); border-left: 4px solid #3b82f6; padding: 24px; margin-bottom: 32px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                <p style="margin: 0; font-size: 16px; line-height: 1.7; color: #1f2937; white-space: pre-wrap;">${customMessage}</p>
               </div>
-              ` : ""}
+              ` : `
+              <!-- Default greeting -->
+              <p style="margin: 0 0 32px; font-size: 18px; line-height: 1.6; color: #374151;">
+                Hoi! Wat leuk dat je de foto's wilt bekijken. Ik heb ze voor je klaar gezet op een beveiligde download pagina.
+              </p>
+              `}
 
               <!-- Details -->
-              <table role="presentation" style="width: 100%; margin-bottom: 32px; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;">
+              <table role="presentation" style="width: 100%; margin-bottom: 32px; border: 2px solid #e5e7eb; border-radius: 12px; overflow: hidden; background: #fafafa;">
                 <tr>
-                  <td style="padding: 16px 20px; border-bottom: 1px solid #e5e7eb;">
+                  <td style="padding: 18px 24px; border-bottom: 1px solid #e5e7eb; background: #ffffff;">
                     <table role="presentation" style="width: 100%;">
                       <tr>
-                        <td style="color: #6b7280; font-size: 14px;">Aantal foto's</td>
-                        <td align="right" style="color: #111827; font-size: 14px; font-weight: 600;">${metadata.files.length}</td>
+                        <td style="color: #6b7280; font-size: 14px; font-weight: 500;">📸 Aantal foto's</td>
+                        <td align="right" style="color: #111827; font-size: 16px; font-weight: 700;">${metadata.files.length}</td>
                       </tr>
                     </table>
                   </td>
                 </tr>
                 <tr>
-                  <td style="padding: 16px 20px; border-bottom: 1px solid #e5e7eb;">
+                  <td style="padding: 18px 24px; border-bottom: 1px solid #e5e7eb; background: #ffffff;">
                     <table role="presentation" style="width: 100%;">
                       <tr>
-                        <td style="color: #6b7280; font-size: 14px;">Totale grootte</td>
-                        <td align="right" style="color: #111827; font-size: 14px; font-weight: 600;">${formatBytes(totalSize)}</td>
+                        <td style="color: #6b7280; font-size: 14px; font-weight: 500;">💾 Totale grootte</td>
+                        <td align="right" style="color: #111827; font-size: 16px; font-weight: 700;">${formatBytes(totalSize)}</td>
                       </tr>
                     </table>
                   </td>
                 </tr>
                 <tr>
-                  <td style="padding: 16px 20px;">
+                  <td style="padding: 18px 24px; background: #ffffff;">
                     <table role="presentation" style="width: 100%;">
                       <tr>
-                        <td style="color: #6b7280; font-size: 14px;">Beschikbaar tot</td>
-                        <td align="right" style="color: #111827; font-size: 14px; font-weight: 600;">${expiryDate}</td>
+                        <td style="color: #6b7280; font-size: 14px; font-weight: 500;">⏰ Beschikbaar tot</td>
+                        <td align="right" style="color: #111827; font-size: 16px; font-weight: 700;">${expiryDate}</td>
                       </tr>
                     </table>
                   </td>
@@ -148,19 +168,27 @@ export async function POST(request: NextRequest) {
               </table>
 
               <!-- CTA Button -->
-              <table role="presentation" style="width: 100%; margin-bottom: 24px;">
+              <table role="presentation" style="width: 100%; margin-bottom: 28px;">
                 <tr>
-                  <td align="center">
-                    <a href="${downloadUrl}" style="display: inline-block; padding: 16px 48px; background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%); color: #ffffff; text-decoration: none; border-radius: 8px; font-size: 16px; font-weight: 600; box-shadow: 0 4px 6px rgba(59, 130, 246, 0.3);">
-                      Download je foto's
+                  <td align="center" style="padding: 8px 0;">
+                    <a href="${downloadUrl}" style="display: inline-block; padding: 18px 56px; background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%); color: #ffffff; text-decoration: none; border-radius: 12px; font-size: 18px; font-weight: 700; box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.3), 0 4px 6px -2px rgba(59, 130, 246, 0.2); transition: transform 0.2s;">
+                      📥 Download Foto's
                     </a>
                   </td>
                 </tr>
               </table>
 
               <!-- Footer Note -->
-              <p style="margin: 0; font-size: 13px; color: #9ca3af; text-align: center; line-height: 1.5;">
-                Of kopieer deze link: <a href="${downloadUrl}" style="color: #3b82f6; text-decoration: none;">${downloadUrl}</a>
+              <div style="background-color: #f9fafb; border-radius: 8px; padding: 16px; text-align: center; margin-bottom: 24px;">
+                <p style="margin: 0; font-size: 13px; color: #6b7280; line-height: 1.5;">
+                  Of kopieer deze link:<br>
+                  <a href="${downloadUrl}" style="color: #3b82f6; text-decoration: none; font-weight: 600; word-break: break-all;">${downloadUrl}</a>
+                </p>
+              </div>
+
+              <!-- Security note -->
+              <p style="margin: 0; font-size: 12px; color: #9ca3af; text-align: center; line-height: 1.5;">
+                🔒 Beveiligde verbinding • De foto's worden automatisch verwijderd na de vervaldatum
               </p>
 
             </td>
@@ -168,15 +196,30 @@ export async function POST(request: NextRequest) {
 
           <!-- Footer -->
           <tr>
-            <td style="padding: 32px 40px; background-color: #f9fafb; border-top: 1px solid #e5e7eb;">
-              <p style="margin: 0 0 8px; font-size: 13px; color: #6b7280; text-align: center;">
+            <td style="padding: 40px; background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%); border-top: 2px solid #e5e7eb;">
+              <table role="presentation" style="width: 100%; margin-bottom: 16px;">
+                <tr>
+                  <td align="center">
+                    <div style="display: inline-block; padding: 8px 16px; background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%); border-radius: 6px; margin-bottom: 12px;">
+                      <span style="color: #ffffff; font-size: 14px; font-weight: 700; letter-spacing: 2px;">WOUTER.PHOTO</span>
+                    </div>
+                  </td>
+                </tr>
+              </table>
+              <p style="margin: 0 0 12px; font-size: 14px; color: #374151; text-align: center; line-height: 1.5;">
                 Met vriendelijke groet,<br>
-                <strong style="color: #111827;">Wouter Vellekoop</strong>
+                <strong style="color: #111827; font-size: 16px;">Wouter Vellekoop</strong><br>
+                <span style="color: #6b7280; font-size: 13px;">Fotograaf</span>
               </p>
-              <p style="margin: 0; font-size: 12px; color: #9ca3af; text-align: center;">
-                <a href="https://wouter.photo" style="color: #3b82f6; text-decoration: none;">wouter.photo</a> • 
-                <a href="mailto:info@woutervellekoop.nl" style="color: #3b82f6; text-decoration: none;">info@woutervellekoop.nl</a>
-              </p>
+              <table role="presentation" style="width: 100%; margin-top: 16px;">
+                <tr>
+                  <td align="center">
+                    <a href="https://wouter.photo" style="display: inline-block; margin: 0 8px; color: #3b82f6; text-decoration: none; font-size: 13px; font-weight: 500;">🌐 wouter.photo</a>
+                    <span style="color: #d1d5db;">•</span>
+                    <a href="mailto:info@woutervellekoop.nl" style="display: inline-block; margin: 0 8px; color: #3b82f6; text-decoration: none; font-size: 13px; font-weight: 500;">✉️ info@woutervellekoop.nl</a>
+                  </td>
+                </tr>
+              </table>
             </td>
           </tr>
 

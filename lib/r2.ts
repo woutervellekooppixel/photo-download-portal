@@ -23,6 +23,7 @@ export const r2Client = new S3Client({
 
 export interface UploadMetadata {
   slug: string;
+  title?: string; // Optional: friendly title for the upload
   createdAt: string;
   expiresAt: string;
   files: {
