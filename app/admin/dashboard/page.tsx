@@ -31,7 +31,7 @@ export default function AdminDashboard() {
   const [slug, setSlug] = useState("");
   const [expiryDays, setExpiryDays] = useState(7);
   const [clientEmail, setClientEmail] = useState("");
-  const [customMessage, setCustomMessage] = useState("Hi,\n\nHierbij de foto's van afgelopen avond.\n\nMocht je nog iets nodig hebben, laat het gerust weten.");
+  const [customMessage, setCustomMessage] = useState("Hi,\n\nHierbij de foto's van afgelopen avond.\n\");
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploads, setUploads] = useState<Upload[]>([]);
@@ -321,15 +321,49 @@ export default function AdminDashboard() {
         throw new Error('Failed to save metadata');
       }
 
-      toast({
-        title: "Succes!",
-        description: `Upload succesvol: ${title || slug}`,
-      });
+      // Send email if client email is provided
+      if (clientEmail.trim()) {
+        try {
+          const emailRes = await fetch("/api/admin/send-email", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              slug,
+              recipientEmail: clientEmail.trim(),
+              customMessage: customMessage.trim() || undefined,
+            }),
+          });
+
+          if (!emailRes.ok) {
+            const emailData = await emailRes.json();
+            console.error("Email send error:", emailData);
+            throw new Error("Email verzenden mislukt");
+          }
+
+          toast({
+            title: "Succes!",
+            description: `Upload succesvol en email verzonden naar ${clientEmail}`,
+          });
+        } catch (emailError) {
+          console.error("Email error:", emailError);
+          toast({
+            title: "Upload succesvol",
+            description: "Maar email verzenden is mislukt. Je kunt het opnieuw proberen via het envelopje.",
+            variant: "destructive",
+          });
+        }
+      } else {
+        toast({
+          title: "Succes!",
+          description: `Upload succesvol: ${title || slug}`,
+        });
+      }
+
       setFiles([]);
       setTitle("");
       setSlug("");
       setClientEmail("");
-      setCustomMessage("");
+      setCustomMessage("Hi,\n\nHierbij de foto's van afgelopen avond.\n\nMocht je nog iets nodig hebben, laat het gerust weten.");
       setUploadProgress(0);
       loadUploads();
     } catch (error) {
