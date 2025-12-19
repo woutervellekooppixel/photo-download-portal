@@ -64,6 +64,11 @@ export async function POST(request: NextRequest) {
       ? `${metadata.title} - Je foto's staan klaar! 📷`
       : "Je foto's staan klaar! 📷";
 
+    // Format custom message - convert newlines to <br> tags
+    const formattedCustomMessage = customMessage 
+      ? customMessage.replace(/\n/g, '<br>')
+      : '';
+
     // Send email
     const { data, error } = await resend.emails.send({
       from: "Wouter Vellekoop <noreply@wouter.photo>",
@@ -102,7 +107,7 @@ export async function POST(request: NextRequest) {
               ${customMessage ? `
               <!-- Custom Message -->
               <div style="margin-bottom: 32px; background-color: #ffffff;">
-                <p style="margin: 0; font-size: 16px; line-height: 1.6; color: #374151; white-space: pre-wrap;">${customMessage}</p>
+                <p style="margin: 0; font-size: 16px; line-height: 1.6; color: #374151;">${formattedCustomMessage}</p>
               </div>
               ` : `
               <div style="margin-bottom: 32px; background-color: #ffffff;">
