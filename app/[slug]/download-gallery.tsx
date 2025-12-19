@@ -226,8 +226,6 @@ export default function DownloadGallery({
                 <span className="font-normal">PHOTO</span>
               </a>
               <div className="hidden md:flex items-center gap-2 text-sm text-gray-600">
-                <span className="font-medium">{metadata.slug.replace(/-/g, " ")}</span>
-                <span className="text-gray-400">•</span>
                 <span>{metadata.files.length} bestand{metadata.files.length !== 1 ? 'en' : ''}</span>
                 <span className="text-gray-400">•</span>
                 <span>{formatBytes(totalSize)}</span>
@@ -280,11 +278,17 @@ export default function DownloadGallery({
       </nav>
 
       <div className="container mx-auto p-6 max-w-6xl">
+        {/* Project Title */}
+        <div className="mb-8 mt-4">
+          <h1 className="text-3xl font-bold text-gray-900 text-center">
+            {metadata.slug.replace(/-/g, " ")}
+          </h1>
+        </div>
+
         {/* Photos Section */}
         {imageFiles.length > 0 && (
           <div className="mb-12">
             <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-              📸 Foto's
               <span className="text-sm font-normal text-gray-500">
                 ({imageFiles.length})
               </span>
@@ -294,9 +298,9 @@ export default function DownloadGallery({
               <div key={folder} className="mb-8">
                 {hasImageFolders && (
                   <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                    📁 {folder}
+                    {folder}
                     <span className="text-sm font-normal text-gray-500">
-                      ({imagesByFolder[folder].length} foto's)
+                      ({imagesByFolder[folder].length})
                     </span>
                   </h3>
                 )}
@@ -385,7 +389,6 @@ export default function DownloadGallery({
                         ) : (
                           <ChevronDown className="h-5 w-5 text-gray-500" />
                         )}
-                        <Folder className="h-5 w-5 text-blue-600" />
                         <div className="flex-1">
                           <p className="font-semibold text-gray-900">{folder}</p>
                           <p className="text-xs text-gray-500">
