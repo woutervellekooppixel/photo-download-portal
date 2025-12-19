@@ -130,19 +130,28 @@ export async function POST(request: NextRequest) {
                 </tr>
               </table>
 
-              <!-- Social Links and Signature -->
+              <!-- Signature -->
               <div style="margin-bottom: 32px; background-color: #ffffff;">
-                <p style="margin: 0 0 12px; font-size: 16px; line-height: 1.6; color: #374151;">
-                  <strong>Volg me op social media:</strong><br>
-                  Instagram: <a href="https://instagram.com/woutervellekoop" style="color: #000000; text-decoration: none;">@woutervellekoop</a><br>
-                  Facebook: <a href="https://facebook.com/wvellekoop" style="color: #000000; text-decoration: none;">@wvellekoop</a>
-                </p>
-                <p style="margin: 16px 0 0; font-size: 16px; line-height: 1.6; color: #374151;">
+                <p style="margin: 0; font-size: 16px; line-height: 1.6; color: #374151;">
                   Vragen of opmerkingen? Stuur me gerust een berichtje!<br><br>
                   Groetjes,<br>
                   <strong>Wouter Vellekoop</strong>
                 </p>
               </div>
+
+              <!-- Social Icons -->
+              <table role="presentation" style="width: 100%; margin-bottom: 20px;">
+                <tr>
+                  <td align="center">
+                    <a href="https://instagram.com/woutervellekoop" style="display: inline-block; margin: 0 8px;">
+                      <img src="https://cdn.simpleicons.org/instagram/000000" alt="Instagram" style="width: 24px; height: 24px;" />
+                    </a>
+                    <a href="https://facebook.com/wvellekoop" style="display: inline-block; margin: 0 8px;">
+                      <img src="https://cdn.simpleicons.org/facebook/000000" alt="Facebook" style="width: 24px; height: 24px;" />
+                    </a>
+                  </td>
+                </tr>
+              </table>
 
               <!-- Logo -->
               <table role="presentation" style="width: 100%;">
