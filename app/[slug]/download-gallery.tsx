@@ -97,7 +97,31 @@ export default function DownloadGallery({
       const urls: Record<string, string> = {};
       let loaded = 0;
       
+      // Load preview image first for loading screen
+      if (previewImage) {
+        try {
+          const response = await fetch(
+            `/api/thumbnail/${metadata.slug}?key=${encodeURIComponent(previewImage.key)}`
+          );
+          const data = await response.json();
+          if (data.url) {
+            urls[previewImage.key] = data.url;
+            setThumbnailUrls({ ...urls }); // Update state immediately for preview
+          }
+        } catch (error) {
+          console.error("Failed to load preview thumbnail:", error);
+        }
+      }
+      
+      // Then load all other files
       for (const file of metadata.files) {
+        // Skip preview image if already loaded
+        if (previewImage && file.key === previewImage.key) {
+          loaded++;
+          setThumbnailsLoaded(loaded);
+          continue;
+        }
+        
         try {
           const response = await fetch(
             `/api/thumbnail/${metadata.slug}?key=${encodeURIComponent(file.key)}`
@@ -122,7 +146,7 @@ export default function DownloadGallery({
     };
 
     loadThumbnails();
-  }, [metadata]);
+  }, [metadata, previewImage]);
 
   const downloadAll = async () => {
     setDownloading(true);
