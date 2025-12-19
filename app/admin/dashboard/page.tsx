@@ -869,7 +869,7 @@ export default function AdminDashboard() {
                                   title={file.name}
                                 >
                                   <img
-                                    src={`/api/admin/thumbnail?slug=${upload.slug}&key=${encodeURIComponent(file.key)}`}
+                                    src={`/api/thumbnail/${upload.slug}?key=${encodeURIComponent(file.key)}`}
                                     alt={file.name}
                                     className="w-full h-full object-cover"
                                   />

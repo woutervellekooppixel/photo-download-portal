@@ -423,18 +423,8 @@ export default function DownloadGallery({
               </div>
             )}
 
-            {imageFolders.map((folder) => (
-              <div key={folder} className="mb-8">
-                {hasImageFolders && (
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                    {folder}
-                    <span className="text-sm font-normal text-gray-500">
-                      ({imagesByFolder[folder].length})
-                    </span>
-                  </h3>
-                )}
-                {/* Fullscreen loading overlay with centered progress */}
-                {loadingThumbnails && (
+            {/* Fullscreen loading overlay with centered progress */}
+            {loadingThumbnails && (
                   <div 
                     className="fixed inset-0 z-50 transition-opacity duration-700" 
                     style={{ opacity: loadingThumbnails ? 1 : 0 }}
@@ -502,6 +492,17 @@ export default function DownloadGallery({
                       </div>
                     </div>
                   </div>
+                )}
+            
+            {imageFolders.map((folder) => (
+              <div key={folder} className="mb-8">
+                {hasImageFolders && (
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                    {folder}
+                    <span className="text-sm font-normal text-gray-500">
+                      ({imagesByFolder[folder].length})
+                    </span>
+                  </h3>
                 )}
                 
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
