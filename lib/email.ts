@@ -1,6 +1,18 @@
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+let resend: Resend | null = null;
+
+function getResend(): Resend {
+  if (!resend) {
+    const apiKey = process.env.RESEND_API_KEY;
+    if (!apiKey) {
+      throw new Error("RESEND_API_KEY is not set");
+    }
+    resend = new Resend(apiKey);
+  }
+  return resend;
+}
+
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "info@woutervellekoop.nl";
 
 export async function sendDownloadNotification(
@@ -8,7 +20,7 @@ export async function sendDownloadNotification(
   fileCount: number
 ): Promise<void> {
   try {
-    await resend.emails.send({
+    await getResend().emails.send({
       from: "Download Portal <noreply@wouter.photo>",
       to: ADMIN_EMAIL,
       subject: `Download: ${slug}`,
