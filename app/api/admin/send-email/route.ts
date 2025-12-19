@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
 
     // Send email
     const { data, error } = await resend.emails.send({
-      from: "Wouter Photo <onboarding@resend.dev>",
+      from: "Wouter Vellekoop <noreply@wouter.photo>",
       replyTo: "info@woutervellekoop.nl",
       to: recipientEmail,
       subject: "Je foto's staan klaar! 📷",
