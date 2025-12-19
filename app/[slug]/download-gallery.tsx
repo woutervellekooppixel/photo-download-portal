@@ -180,7 +180,8 @@ export default function DownloadGallery({
         const fileKey = Array.from(selectedFiles)[0];
         const file = metadata.files.find(f => f.key === fileKey);
         if (file) {
-          await downloadFile(file.key, file.name);
+          const displayName = file.name.split('/').pop() || file.name;
+          await downloadSingle(file.key, displayName);
         }
       } else {
         // Create a temporary metadata with only selected files
