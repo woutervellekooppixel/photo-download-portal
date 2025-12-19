@@ -438,27 +438,46 @@ export default function DownloadGallery({
           {/* Subtle dark overlay */}
           <div className="absolute inset-0 bg-black/20" />
           
-          {/* Minimal progress bar at bottom */}
-          <div className="absolute bottom-0 left-0 right-0 p-8">
-            <div className="max-w-md mx-auto space-y-3">
-              {/* Thin progress bar */}
-              <div className="relative w-full h-1 bg-white/20 rounded-full overflow-hidden backdrop-blur-sm">
-                <div 
-                  className="absolute inset-y-0 left-0 bg-white rounded-full transition-all duration-500 ease-out"
-                  style={{ width: `${(thumbnailsLoaded / metadata.files.length) * 100}%` }}
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent animate-shimmer" />
-                </div>
-              </div>
+          {/* Circular progress indicator */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="relative">
+              {/* Circular progress ring */}
+              <svg className="w-32 h-32 transform -rotate-90" viewBox="0 0 120 120">
+                {/* Background circle */}
+                <circle
+                  cx="60"
+                  cy="60"
+                  r="54"
+                  stroke="white"
+                  strokeWidth="2"
+                  fill="none"
+                  className="opacity-20"
+                />
+                {/* Progress circle */}
+                <circle
+                  cx="60"
+                  cy="60"
+                  r="54"
+                  stroke="white"
+                  strokeWidth="2"
+                  fill="none"
+                  strokeDasharray={`${2 * Math.PI * 54}`}
+                  strokeDashoffset={`${2 * Math.PI * 54 * (1 - (thumbnailsLoaded / metadata.files.length))}`}
+                  className="transition-all duration-500 ease-out drop-shadow-lg"
+                  strokeLinecap="round"
+                />
+              </svg>
               
-              {/* Minimal stats */}
-              <div className="flex items-center justify-between text-sm text-white/90">
-                <span className="font-medium drop-shadow">
-                  {Math.round((thumbnailsLoaded / metadata.files.length) * 100)}%
-                </span>
-                <span className="drop-shadow">
-                  {thumbnailsLoaded} / {metadata.files.length}
-                </span>
+              {/* Percentage text in center */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-center">
+                  <div className="text-4xl font-light text-white drop-shadow-lg">
+                    {Math.round((thumbnailsLoaded / metadata.files.length) * 100)}%
+                  </div>
+                  <div className="text-xs text-white/80 mt-1 drop-shadow">
+                    {thumbnailsLoaded} / {metadata.files.length}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -470,9 +489,6 @@ export default function DownloadGallery({
         <div className="mb-8 mt-4">
           <h1 className="text-3xl font-bold text-gray-900 text-center">
             {metadata.slug.replace(/-/g, " ")}
-            <span className="ml-3 text-3xl text-gray-500">
-              ({imageFiles.length})
-            </span>
           </h1>
         </div>
 
