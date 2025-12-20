@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getMetadata, getFile, updateDownloadCount } from "@/lib/r2";
+import { getMetadata, getFile, getZipFile, updateDownloadCount } from "@/lib/r2";
 import archiver from "archiver";
 import { sendDownloadNotification } from "@/lib/email";
 import { downloadRateLimit } from "@/lib/rateLimit";
@@ -31,11 +31,27 @@ export async function GET(
       return NextResponse.json({ error: "Expired" }, { status: 410 });
     }
 
-    // Update download count immediately (before streaming)
+    // Update download count immediately
     await updateDownloadCount(slug);
 
     // Send notification email (async, don't wait)
     sendDownloadNotification(slug, metadata.files.length).catch(console.error);
+
+    // Try to use pre-made zip first
+    const preMadeZip = await getZipFile(slug);
+    if (preMadeZip) {
+      console.log(`[Download] Using pre-made zip for ${slug}`);
+      return new NextResponse(preMadeZip, {
+        headers: {
+          "Content-Type": "application/zip",
+          "Content-Disposition": `attachment; filename="${slug}.zip"`,
+          "Content-Length": preMadeZip.length.toString(),
+        },
+      });
+    }
+
+    // Fallback: create zip on-the-fly with streaming
+    console.log(`[Download] Pre-made zip not found for ${slug}, creating on-the-fly`);
 
     // Create zip archive with streaming
     const archive = archiver("zip", { zlib: { level: 6 } }); // Reduced compression for faster processing

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdminAuth } from "@/lib/auth";
-import { saveMetadata, type UploadMetadata } from "@/lib/r2";
+import { saveMetadata, createZipFile, type UploadMetadata } from "@/lib/r2";
 
 export async function POST(request: NextRequest) {
   const authError = await requireAdminAuth();
@@ -33,6 +33,11 @@ export async function POST(request: NextRequest) {
     };
 
     await saveMetadata(metadata);
+
+    // Create pre-made zip file in the background (don't wait)
+    createZipFile(slug).catch(error => {
+      console.error(`Failed to create pre-made zip for ${slug}:`, error);
+    });
 
     return NextResponse.json({
       success: true,

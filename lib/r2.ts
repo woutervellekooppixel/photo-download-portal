@@ -6,6 +6,7 @@ import {
   DeleteObjectCommand,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import archiver from "archiver";
 
 const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID!;
 const R2_ACCESS_KEY_ID = process.env.R2_ACCESS_KEY_ID!;
@@ -139,6 +140,54 @@ export async function getMetadata(slug: string): Promise<UploadMetadata | null> 
     const key = `metadata/${slug}.json`;
     const buffer = await getFile(key);
     return JSON.parse(buffer.toString("utf-8"));
+  } catch (error) {
+    return null;
+  }
+}
+
+export async function createZipFile(slug: string): Promise<void> {
+  console.log(`[R2] Creating pre-made zip for ${slug}`);
+  const metadata = await getMetadata(slug);
+  if (!metadata) {
+    throw new Error(`Metadata not found for ${slug}`);
+  }
+
+  const archive = archiver("zip", { zlib: { level: 6 } });
+  const chunks: Buffer[] = [];
+
+  // Collect chunks from the archive
+  archive.on("data", (chunk: Buffer) => {
+    chunks.push(chunk);
+  });
+
+  // Wait for archive to finish
+  const archivePromise = new Promise<void>((resolve, reject) => {
+    archive.on("end", resolve);
+    archive.on("error", reject);
+  });
+
+  // Add all files to the archive
+  for (const file of metadata.files) {
+    const buffer = await getFile(file.key);
+    archive.append(buffer, { name: file.name });
+  }
+
+  // Finalize the archive
+  await archive.finalize();
+  await archivePromise;
+
+  // Combine all chunks and upload
+  const zipBuffer = Buffer.concat(chunks);
+  const zipKey = `zips/${slug}.zip`;
+  await uploadFile(zipBuffer, zipKey, "application/zip");
+  
+  console.log(`[R2] Pre-made zip created: ${zipKey} (${zipBuffer.length} bytes)`);
+}
+
+export async function getZipFile(slug: string): Promise<Buffer | null> {
+  try {
+    const zipKey = `zips/${slug}.zip`;
+    return await getFile(zipKey);
   } catch (error) {
     return null;
   }
