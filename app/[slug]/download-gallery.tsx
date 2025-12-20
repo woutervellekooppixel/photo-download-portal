@@ -29,6 +29,7 @@ export default function DownloadGallery({
   metadata: UploadMetadata;
 }) {
   const [downloading, setDownloading] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState(0);
   const [downloadingFile, setDownloadingFile] = useState<string | null>(null);
   const [thumbnailUrls, setThumbnailUrls] = useState<Record<string, string>>({});
   const [collapsedFolders, setCollapsedFolders] = useState<Record<string, boolean>>({});
@@ -183,6 +184,19 @@ export default function DownloadGallery({
 
   const downloadAll = async () => {
     setDownloading(true);
+    setDownloadProgress(0);
+    
+    // Fake progress animation over 3 seconds
+    const progressInterval = setInterval(() => {
+      setDownloadProgress(prev => {
+        if (prev >= 95) {
+          clearInterval(progressInterval);
+          return 95;
+        }
+        return prev + 5;
+      });
+    }, 150);
+    
     try {
       // Direct download link - browser handles it natively (much faster!)
       const a = document.createElement("a");
@@ -192,13 +206,20 @@ export default function DownloadGallery({
       a.click();
       document.body.removeChild(a);
       
-      // Reset downloading state after a short delay
+      // Complete progress and reset after delay
       setTimeout(() => {
-        setDownloading(false);
-      }, 1000);
+        setDownloadProgress(100);
+        setTimeout(() => {
+          clearInterval(progressInterval);
+          setDownloading(false);
+          setDownloadProgress(0);
+        }, 500);
+      }, 2000);
     } catch (error) {
       console.error("Download failed:", error);
+      clearInterval(progressInterval);
       setDownloading(false);
+      setDownloadProgress(0);
     }
   };
 
@@ -512,16 +533,37 @@ export default function DownloadGallery({
         {imageFiles.length > 0 && (
           <div className="mb-12">
             <div className="flex items-center justify-between mb-6">
-              <Button
-                onClick={downloadAll}
-                disabled={downloading}
-                variant="outline"
-                size="sm"
-              >
-                <Download className="mr-2 h-4 w-4" />
-                <span className="hidden sm:inline">Download Alles</span>
-                <span className="sm:hidden">Download</span>
-              </Button>
+              {!downloading ? (
+                <Button
+                  onClick={downloadAll}
+                  variant="outline"
+                  size="sm"
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  <span className="hidden sm:inline">Download Alles</span>
+                  <span className="sm:hidden">Download</span>
+                </Button>
+              ) : (
+                <div className="relative w-40 h-9 bg-gray-100 rounded-md overflow-hidden border border-gray-200">
+                  <div
+                    className="absolute inset-0 bg-gradient-to-r from-gray-800 to-gray-900 transition-all duration-300 ease-out flex items-center justify-center"
+                    style={{ width: `${downloadProgress}%` }}
+                  >
+                    {downloadProgress > 10 && (
+                      <span className="text-white text-xs font-semibold">
+                        {downloadProgress}%
+                      </span>
+                    )}
+                  </div>
+                  {downloadProgress <= 10 && (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-gray-600 text-xs font-semibold">
+                        {downloadProgress}%
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
               <Button
                 onClick={() => {
                   setIsSelectMode(!isSelectMode);

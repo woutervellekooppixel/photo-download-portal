@@ -932,7 +932,7 @@ export default function AdminDashboard() {
                 <div className="w-full space-y-2">
                   <div className="relative w-full h-10 bg-gray-100 rounded-md overflow-hidden border border-gray-200">
                     <div
-                      className="absolute inset-0 bg-gradient-to-r from-blue-500 to-blue-600 transition-all duration-300 ease-out flex items-center justify-center"
+                      className="absolute inset-0 bg-gradient-to-r from-gray-800 to-gray-900 transition-all duration-300 ease-out flex items-center justify-center"
                       style={{ width: `${uploadProgress}%` }}
                     >
                       {uploadProgress > 10 && (
