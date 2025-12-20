@@ -450,18 +450,6 @@ export default function DownloadGallery({
                   </svg>
                 </a>
               </div>
-              
-              {/* Download Selected Button (only in select mode) */}
-              {isSelectMode && selectedFiles.size > 0 && (
-                <Button
-                  onClick={downloadSelected}
-                  disabled={downloading}
-                  size="sm"
-                >
-                  <Download className="mr-2 h-4 w-4" />
-                  Download {selectedFiles.size}
-                </Button>
-              )}
             </div>
           </div>
         </div>
