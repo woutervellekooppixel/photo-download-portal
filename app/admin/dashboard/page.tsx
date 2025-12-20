@@ -680,14 +680,16 @@ export default function AdminDashboard() {
             <div className="grid gap-4 md:grid-cols-4 mb-4">
               <Card>
                 <CardContent className="pt-6">
-                  <div className="text-2xl font-bold">{uploads.length}</div>
+                  <div className="text-2xl font-bold">
+                    {uploads.filter(u => new Date(u.expiresAt) > new Date()).length}
+                  </div>
                   <p className="text-xs text-gray-500">Actieve Uploads</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="pt-6">
                   <div className="text-2xl font-bold">
-                    {uploads.reduce((acc, u) => acc + u.files.length, 0)}
+                    {uploads.filter(u => new Date(u.expiresAt) > new Date()).reduce((acc, u) => acc + u.files.length, 0)}
                   </div>
                   <p className="text-xs text-gray-500">Totaal Bestanden</p>
                 </CardContent>
@@ -695,18 +697,18 @@ export default function AdminDashboard() {
               <Card>
                 <CardContent className="pt-6">
                   <div className="text-2xl font-bold">
-                    {uploads.reduce((acc, u) => acc + u.downloads, 0)}
+                    {uploads.filter(u => new Date(u.expiresAt) > new Date()).reduce((acc, u) => acc + u.downloads, 0)}
                   </div>
                   <p className="text-xs text-gray-500">Totaal Downloads</p>
                   <p className="text-xs text-gray-400 mt-1">
-                    {uploads.reduce((acc, u) => acc + (u.downloadHistory?.length || 0), 0)} events
+                    {uploads.filter(u => new Date(u.expiresAt) > new Date()).reduce((acc, u) => acc + (u.downloadHistory?.length || 0), 0)} events
                   </p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="pt-6">
                   <div className="text-2xl font-bold">
-                    {formatBytes(uploads.reduce((acc, u) => 
+                    {formatBytes(uploads.filter(u => new Date(u.expiresAt) > new Date()).reduce((acc, u) => 
                       acc + u.files.reduce((sum, f) => sum + f.size, 0), 0
                     ))}
                   </div>
@@ -723,7 +725,8 @@ export default function AdminDashboard() {
               <CardContent>
                 <div className="grid gap-4 md:grid-cols-3">
                   {(() => {
-                    const last7Days = uploads.reduce((acc, u) => {
+                    const activeUploads = uploads.filter(u => new Date(u.expiresAt) > new Date());
+                    const last7Days = activeUploads.reduce((acc, u) => {
                       const recentDownloads = u.downloadHistory?.filter(d => {
                         const downloadDate = new Date(d.timestamp);
                         const weekAgo = new Date();
