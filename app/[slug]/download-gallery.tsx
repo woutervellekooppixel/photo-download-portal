@@ -505,24 +505,22 @@ export default function DownloadGallery({
           <h1 className="text-3xl font-bold text-gray-900 text-center mb-6">
             {metadata.title || metadata.slug.replace(/-/g, " ")}
           </h1>
-          <div className="flex justify-center">
-            <Button
-              onClick={downloadAll}
-              disabled={downloading}
-              size="lg"
-            >
-              <Download className="mr-2 h-5 w-5" />
-              <span className="hidden sm:inline">Download Alles</span>
-              <span className="sm:hidden">Download</span>
-            </Button>
-          </div>
         </div>
 
         {/* Photos Section */}
         {imageFiles.length > 0 && (
           <div className="mb-12">
             <div className="flex items-center justify-between mb-6">
-              <div></div>
+              <Button
+                onClick={downloadAll}
+                disabled={downloading}
+                variant="outline"
+                size="sm"
+              >
+                <Download className="mr-2 h-4 w-4" />
+                <span className="hidden sm:inline">Download Alles</span>
+                <span className="sm:hidden">Download</span>
+              </Button>
               <Button
                 onClick={() => {
                   setIsSelectMode(!isSelectMode);
