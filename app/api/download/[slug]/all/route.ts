@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getMetadata, getFile, getZipFile, updateDownloadCount } from "@/lib/r2";
+import { getMetadata, getFile, getZipFile, createZipFile, updateDownloadCount } from "@/lib/r2";
 import archiver from "archiver";
 import { sendDownloadNotification } from "@/lib/email";
 import { downloadRateLimit } from "@/lib/rateLimit";
@@ -52,6 +52,11 @@ export async function GET(
 
     // Fallback: create zip on-the-fly with streaming
     console.log(`[Download] Pre-made zip not found for ${slug}, creating on-the-fly`);
+
+    // Trigger background creation of pre-made zip for next time
+    createZipFile(slug).catch(error => {
+      console.error(`[Download] Failed to create pre-made zip for ${slug}:`, error);
+    });
 
     // Create zip archive with streaming
     const archive = archiver("zip", { zlib: { level: 6 } }); // Reduced compression for faster processing
