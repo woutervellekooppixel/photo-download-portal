@@ -536,13 +536,23 @@ export default function DownloadGallery({
             <div className="flex items-center justify-between mb-6">
               {!downloading ? (
                 <Button
-                  onClick={downloadAll}
+                  onClick={isSelectMode && selectedFiles.size > 0 ? downloadSelected : downloadAll}
                   variant="outline"
                   size="sm"
+                  disabled={isSelectMode && selectedFiles.size === 0}
                 >
                   <Download className="mr-2 h-4 w-4" />
-                  <span className="hidden sm:inline">Download Alles</span>
-                  <span className="sm:hidden">Download</span>
+                  {isSelectMode && selectedFiles.size > 0 ? (
+                    <>
+                      <span className="hidden sm:inline">Download {selectedFiles.size}</span>
+                      <span className="sm:hidden">Download {selectedFiles.size}</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="hidden sm:inline">Download Alles</span>
+                      <span className="sm:hidden">Download</span>
+                    </>
+                  )}
                 </Button>
               ) : (
                 <div className="relative w-40 h-9 bg-gray-100 rounded-md overflow-hidden border border-gray-200">
