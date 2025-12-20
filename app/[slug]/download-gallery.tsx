@@ -515,7 +515,7 @@ export default function DownloadGallery({
         {/* Project Title */}
         <div className="mb-8 mt-4">
           <h1 className="text-3xl font-bold text-gray-900 text-center">
-            {metadata.slug.replace(/-/g, " ")}
+            {metadata.title || metadata.slug.replace(/-/g, " ")}
           </h1>
         </div>
 
