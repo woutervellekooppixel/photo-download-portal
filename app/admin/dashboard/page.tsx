@@ -21,6 +21,13 @@ interface Upload {
   expiresAt: string;
   files: { key: string; name: string; size: number; type: string }[];
   downloads: number;
+  downloadHistory?: {
+    timestamp: string;
+    type: 'all' | 'single' | 'selected';
+    files?: string[];
+    ip?: string;
+    userAgent?: string;
+  }[];
   previewImageKey?: string;
   clientEmail?: string;
   customMessage?: string;
