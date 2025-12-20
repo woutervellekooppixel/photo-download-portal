@@ -445,77 +445,104 @@ export default function DownloadGallery({
         </div>
       </nav>
 
-      {/* Fullscreen loading overlay with subtle progress */}
+      {/* Elegant fullscreen loading overlay */}
       {loadingThumbnails && (
         <div 
-          className="fixed inset-0 z-50 transition-opacity duration-1000" 
+          className="fixed inset-0 z-50 transition-all duration-1000" 
           style={{ opacity: loadingThumbnails ? 1 : 0 }}
         >
-          {/* Fullscreen preview image */}
-          <div className="absolute inset-0 bg-black">
+          {/* Fullscreen preview image with zoom animation */}
+          <div className="absolute inset-0 bg-black overflow-hidden">
             {previewImage && thumbnailUrls[previewImage.key] ? (
-              <Image
-                src={thumbnailUrls[previewImage.key]}
-                alt="Loading preview"
-                fill
-                className="object-cover animate-in fade-in duration-700"
-                sizes="100vw"
-                priority
-              />
+              <div className="relative w-full h-full animate-in zoom-in-95 fade-in duration-[2000ms]">
+                <Image
+                  src={thumbnailUrls[previewImage.key]}
+                  alt="Loading preview"
+                  fill
+                  className="object-cover scale-105"
+                  sizes="100vw"
+                  priority
+                />
+              </div>
             ) : (
-              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-900 to-gray-800">
-                <div className="relative w-32 h-32">
-                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full opacity-30 animate-pulse" />
-                  <ImageIcon className="absolute inset-0 m-auto h-16 w-16 text-white/40" />
+              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+                <div className="relative w-40 h-40">
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500/30 to-purple-600/30 rounded-full animate-pulse blur-2xl" />
+                  <ImageIcon className="absolute inset-0 m-auto h-20 w-20 text-white/30 animate-pulse" />
                 </div>
               </div>
             )}
           </div>
           
-          {/* Subtle dark overlay */}
-          <div className="absolute inset-0 bg-black/20" />
+          {/* Elegant gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-black/60 backdrop-blur-[2px]" />
           
-          {/* Circular progress indicator */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="relative">
-              {/* Circular progress ring */}
-              <svg className="w-32 h-32 transform -rotate-90" viewBox="0 0 120 120">
-                {/* Background circle */}
+          {/* Center content */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            {/* Logo/Brand */}
+            <div className="mb-16 animate-in fade-in slide-in-from-bottom-4 duration-700">
+              <div className="text-white/90 text-2xl tracking-tight">
+                <span className="font-bold">WOUTER.</span>
+                <span className="font-light">PHOTO</span>
+              </div>
+            </div>
+            
+            {/* Progress indicator */}
+            <div className="relative animate-in fade-in slide-in-from-bottom-4 duration-700 delay-150">
+              {/* Minimalist progress ring */}
+              <svg className="w-40 h-40 transform -rotate-90" viewBox="0 0 140 140">
+                {/* Background ring with glow */}
+                <defs>
+                  <filter id="glow">
+                    <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+                    <feMerge>
+                      <feMergeNode in="coloredBlur"/>
+                      <feMergeNode in="SourceGraphic"/>
+                    </feMerge>
+                  </filter>
+                </defs>
                 <circle
-                  cx="60"
-                  cy="60"
-                  r="54"
+                  cx="70"
+                  cy="70"
+                  r="62"
                   stroke="white"
-                  strokeWidth="2"
+                  strokeWidth="1"
                   fill="none"
-                  className="opacity-20"
+                  className="opacity-10"
                 />
-                {/* Progress circle */}
+                {/* Animated progress ring */}
                 <circle
-                  cx="60"
-                  cy="60"
-                  r="54"
+                  cx="70"
+                  cy="70"
+                  r="62"
                   stroke="white"
-                  strokeWidth="2"
+                  strokeWidth="1.5"
                   fill="none"
-                  strokeDasharray={`${2 * Math.PI * 54}`}
-                  strokeDashoffset={`${2 * Math.PI * 54 * (1 - (thumbnailsLoaded / metadata.files.length))}`}
-                  className="transition-all duration-500 ease-out drop-shadow-lg"
+                  strokeDasharray={`${2 * Math.PI * 62}`}
+                  strokeDashoffset={`${2 * Math.PI * 62 * (1 - (thumbnailsLoaded / metadata.files.length))}`}
+                  className="transition-all duration-700 ease-out"
                   strokeLinecap="round"
+                  filter="url(#glow)"
                 />
               </svg>
               
-              {/* Percentage text in center */}
+              {/* Elegant percentage display */}
               <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-center">
-                  <div className="text-4xl font-light text-white drop-shadow-lg">
-                    {Math.round((thumbnailsLoaded / metadata.files.length) * 100)}%
+                <div className="text-center space-y-3">
+                  <div className="text-6xl font-extralight text-white tracking-tight tabular-nums">
+                    {Math.round((thumbnailsLoaded / metadata.files.length) * 100)}
+                    <span className="text-3xl opacity-60">%</span>
                   </div>
-                  <div className="text-xs text-white/80 mt-1 drop-shadow">
-                    {thumbnailsLoaded} / {metadata.files.length}
+                  <div className="text-xs font-light text-white/70 tracking-widest uppercase">
+                    {thumbnailsLoaded} van {metadata.files.length}
                   </div>
                 </div>
               </div>
+            </div>
+            
+            {/* Loading text */}
+            <div className="mt-16 text-white/60 text-sm font-light tracking-wide animate-in fade-in duration-700 delay-300">
+              Bestanden laden...
             </div>
           </div>
         </div>
