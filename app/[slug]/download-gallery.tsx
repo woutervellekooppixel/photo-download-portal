@@ -474,7 +474,7 @@ export default function DownloadGallery({
           style={{ opacity: loadingThumbnails ? 1 : 0 }}
         >
           {/* Fullscreen preview image - sharp and clear */}
-          <div className="absolute inset-0 bg-black">
+          <div className="absolute inset-0 bg-gray-900">
             {previewImage && thumbnailUrls[previewImage.key] ? (
               <Image
                 src={thumbnailUrls[previewImage.key]}
@@ -484,11 +484,12 @@ export default function DownloadGallery({
                 sizes="100vw"
                 priority
                 onLoad={() => setPreviewLoaded(true)}
+                placeholder="empty"
               />
             ) : (
-              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-900 to-gray-800">
+              <div className="w-full h-full flex items-center justify-center bg-gray-900">
                 <div className="relative w-32 h-32">
-                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full opacity-30 animate-pulse" />
+                  <div className="absolute inset-0 bg-gray-700 rounded-full opacity-30 animate-pulse" />
                   <ImageIcon className="absolute inset-0 m-auto h-16 w-16 text-white/40" />
                 </div>
               </div>
