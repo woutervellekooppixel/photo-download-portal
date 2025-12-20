@@ -429,29 +429,17 @@ export default function DownloadGallery({
                 </a>
               </div>
               
-              {/* Download Button */}
-              <div className="flex items-center gap-2">
-                {isSelectMode && selectedFiles.size > 0 && (
-                  <Button
-                    onClick={downloadSelected}
-                    disabled={downloading}
-                    size="sm"
-                    variant="outline"
-                  >
-                    <Download className="mr-2 h-4 w-4" />
-                    Download {selectedFiles.size}
-                  </Button>
-                )}
+              {/* Download Selected Button (only in select mode) */}
+              {isSelectMode && selectedFiles.size > 0 && (
                 <Button
-                  onClick={downloadAll}
+                  onClick={downloadSelected}
                   disabled={downloading}
                   size="sm"
                 >
                   <Download className="mr-2 h-4 w-4" />
-                  <span className="hidden sm:inline">{downloading ? "Voorbereiden..." : "Download Alles"}</span>
-                  <span className="sm:hidden">Download</span>
+                  Download {selectedFiles.size}
                 </Button>
-              </div>
+              )}
             </div>
           </div>
         </div>
@@ -514,9 +502,20 @@ export default function DownloadGallery({
       <div className={`container mx-auto p-6 max-w-6xl transition-opacity duration-1000 ${loadingThumbnails ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
         {/* Project Title */}
         <div className="mb-8 mt-4">
-          <h1 className="text-3xl font-bold text-gray-900 text-center">
+          <h1 className="text-3xl font-bold text-gray-900 text-center mb-6">
             {metadata.title || metadata.slug.replace(/-/g, " ")}
           </h1>
+          <div className="flex justify-center">
+            <Button
+              onClick={downloadAll}
+              disabled={downloading}
+              size="lg"
+            >
+              <Download className="mr-2 h-5 w-5" />
+              <span className="hidden sm:inline">Download Alles</span>
+              <span className="sm:hidden">Download</span>
+            </Button>
+          </div>
         </div>
 
         {/* Photos Section */}
