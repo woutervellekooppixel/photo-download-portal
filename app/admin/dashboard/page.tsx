@@ -53,8 +53,69 @@ export default function AdminDashboard() {
   const [emailRecipient, setEmailRecipient] = useState("");
   const [emailMessage, setEmailMessage] = useState("");
   const [sendingEmail, setSendingEmail] = useState(false);
+  const [templates, setTemplates] = useState<Array<{ name: string; email: string; message: string }>>([]);
+  const [showTemplateDialog, setShowTemplateDialog] = useState(false);
+  const [templateName, setTemplateName] = useState("");
   const { toast } = useToast();
   const router = useRouter();
+
+  // Load templates from localStorage
+  useEffect(() => {
+    const savedTemplates = localStorage.getItem('emailTemplates');
+    if (savedTemplates) {
+      setTemplates(JSON.parse(savedTemplates));
+    }
+  }, []);
+
+  const saveTemplate = () => {
+    if (!templateName.trim()) {
+      toast({
+        title: "Naam vereist",
+        description: "Geef je template een naam",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const newTemplate = {
+      name: templateName,
+      email: clientEmail,
+      message: customMessage,
+    };
+
+    const updatedTemplates = [...templates, newTemplate];
+    setTemplates(updatedTemplates);
+    localStorage.setItem('emailTemplates', JSON.stringify(updatedTemplates));
+    
+    setTemplateName("");
+    setShowTemplateDialog(false);
+    
+    toast({
+      title: "Template opgeslagen!",
+      description: `Template "${newTemplate.name}" is opgeslagen`,
+    });
+  };
+
+  const loadTemplate = (template: { name: string; email: string; message: string }) => {
+    setClientEmail(template.email);
+    setCustomMessage(template.message);
+    
+    toast({
+      title: "Template geladen",
+      description: `Template "${template.name}" is ingevuld`,
+    });
+  };
+
+  const deleteTemplate = (index: number) => {
+    const updatedTemplates = templates.filter((_, i) => i !== index);
+    setTemplates(updatedTemplates);
+    localStorage.setItem('emailTemplates', JSON.stringify(updatedTemplates));
+    
+    toast({
+      title: "Template verwijderd",
+      description: "Template is verwijderd",
+    });
+  };
 
   // Auto logout after 5 hours of inactivity
   useAutoLogout({ 
@@ -799,18 +860,46 @@ export default function AdminDashboard() {
               </div>
 
               <div className="space-y-3">
-                <div>
-                  <label className="text-sm font-medium mb-1 block">Client email (optioneel)</label>
-                  <Input
-                    type="email"
-                    placeholder="naam@voorbeeld.nl"
-                    value={clientEmail}
-                    onChange={(e) => setClientEmail(e.target.value)}
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Voor het verzenden van de download link naar je klant
-                  </p>
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium block">Client email (optioneel)</label>
+                  <div className="flex gap-2">
+                    {templates.length > 0 && (
+                      <select
+                        onChange={(e) => {
+                          if (e.target.value) {
+                            loadTemplate(templates[parseInt(e.target.value)]);
+                            e.target.value = "";
+                          }
+                        }}
+                        className="text-xs border border-gray-300 rounded px-2 py-1"
+                      >
+                        <option value="">Laad template...</option>
+                        {templates.map((template, index) => (
+                          <option key={index} value={index}>
+                            {template.name}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setShowTemplateDialog(true)}
+                    >
+                      Opslaan als template
+                    </Button>
+                  </div>
                 </div>
+                <Input
+                  type="email"
+                  placeholder="naam@voorbeeld.nl"
+                  value={clientEmail}
+                  onChange={(e) => setClientEmail(e.target.value)}
+                />
+                <p className="text-xs text-gray-500">
+                  Voor het verzenden van de download link naar je klant
+                </p>
 
                 <div>
                   <label className="text-sm font-medium mb-1 block">Persoonlijk bericht</label>
@@ -1294,6 +1383,80 @@ export default function AdminDashboard() {
                     Verstuur Email
                   </>
                 )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Template Save Dialog */}
+      {showTemplateDialog && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg max-w-md w-full shadow-xl">
+            <div className="p-6">
+              <h3 className="text-lg font-semibold mb-4">Template opslaan</h3>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium mb-1 block">Template naam</label>
+                  <Input
+                    type="text"
+                    placeholder="Bijv: Bruiloft, Bedrijfsevent, ..."
+                    value={templateName}
+                    onChange={(e) => setTemplateName(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && saveTemplate()}
+                    autoFocus
+                  />
+                </div>
+
+                <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded">
+                  <p className="font-medium mb-1">Dit wordt opgeslagen:</p>
+                  <ul className="list-disc list-inside space-y-1 text-xs">
+                    <li>Email: {clientEmail || '(leeg)'}</li>
+                    <li>Bericht: {customMessage.substring(0, 50)}...</li>
+                  </ul>
+                </div>
+
+                {templates.length > 0 && (
+                  <div>
+                    <p className="text-sm font-medium mb-2">Bestaande templates:</p>
+                    <div className="space-y-1 max-h-32 overflow-y-auto">
+                      {templates.map((template, index) => (
+                        <div key={index} className="flex items-center justify-between text-sm bg-gray-50 p-2 rounded">
+                          <span>{template.name}</span>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() => deleteTemplate(index)}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="p-4 border-t bg-gray-50 flex gap-3">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowTemplateDialog(false);
+                  setTemplateName("");
+                }}
+                className="flex-1"
+              >
+                Annuleren
+              </Button>
+              <Button
+                onClick={saveTemplate}
+                disabled={!templateName.trim()}
+                className="flex-1"
+              >
+                Opslaan
               </Button>
             </div>
           </div>
