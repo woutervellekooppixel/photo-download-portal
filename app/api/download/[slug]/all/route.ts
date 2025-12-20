@@ -31,52 +31,52 @@ export async function GET(
       return NextResponse.json({ error: "Expired" }, { status: 410 });
     }
 
-    // Create zip archive
-    const archive = archiver("zip", { zlib: { level: 9 } });
-    const chunks: Uint8Array[] = [];
-
-    // Collect chunks from the archive
-    archive.on("data", (chunk: Buffer) => {
-      chunks.push(new Uint8Array(chunk));
-    });
-
-    // Wait for archive to finish
-    const archivePromise = new Promise<void>((resolve, reject) => {
-      archive.on("end", resolve);
-      archive.on("error", reject);
-    });
-
-    // Add all files to the archive
-    for (const file of metadata.files) {
-      const buffer = await getFile(file.key);
-      archive.append(buffer, { name: file.name });
-    }
-
-    // Finalize the archive
-    await archive.finalize();
-    await archivePromise;
-
-    // Combine all chunks
-    const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
-    const combined = new Uint8Array(totalLength);
-    let offset = 0;
-    for (const chunk of chunks) {
-      combined.set(chunk, offset);
-      offset += chunk.length;
-    }
-
-    // Update download count
+    // Update download count immediately (before streaming)
     await updateDownloadCount(slug);
 
-    // Send notification email
+    // Send notification email (async, don't wait)
     sendDownloadNotification(slug, metadata.files.length).catch(console.error);
 
-    // Return the zip file
-    return new NextResponse(combined, {
+    // Create zip archive with streaming
+    const archive = archiver("zip", { zlib: { level: 6 } }); // Reduced compression for faster processing
+    
+    // Create a readable stream from the archive
+    const stream = new ReadableStream({
+      start(controller) {
+        archive.on("data", (chunk: Buffer) => {
+          controller.enqueue(new Uint8Array(chunk));
+        });
+
+        archive.on("end", () => {
+          controller.close();
+        });
+
+        archive.on("error", (err) => {
+          controller.error(err);
+        });
+
+        // Start adding files to the archive
+        (async () => {
+          try {
+            for (const file of metadata.files) {
+              const buffer = await getFile(file.key);
+              archive.append(buffer, { name: file.name });
+            }
+            await archive.finalize();
+          } catch (error) {
+            archive.destroy();
+            controller.error(error);
+          }
+        })();
+      },
+    });
+
+    // Return the streaming zip file
+    return new NextResponse(stream, {
       headers: {
         "Content-Type": "application/zip",
         "Content-Disposition": `attachment; filename="${slug}.zip"`,
-        "Content-Length": combined.length.toString(),
+        "Cache-Control": "no-cache",
       },
     });
   } catch (error) {
