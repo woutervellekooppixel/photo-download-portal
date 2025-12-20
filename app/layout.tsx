@@ -6,7 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Download Portal - Wouter Vellekoop Photography",
+  title: "download.wouter.photo",
   description: "Beveiligde download portal voor fotografie bestanden",
 };
 
