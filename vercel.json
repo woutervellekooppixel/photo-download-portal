@@ -1,4 +1,10 @@
 {
+  "crons": [
+    {
+      "path": "/api/cron/cleanup",
+      "schedule": "0 2 * * *"
+    }
+  ],
   "functions": {
     "app/api/admin/upload/route.ts": {
       "maxDuration": 300,
