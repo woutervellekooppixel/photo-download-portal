@@ -34,10 +34,15 @@ export async function POST(request: NextRequest) {
 
     await saveMetadata(metadata);
 
-    // Create pre-made zip file in the background (don't wait)
-    createZipFile(slug).catch(error => {
+    // Create pre-made zip file (wait for it to complete)
+    console.log(`[Admin] Creating pre-made zip for ${slug}...`);
+    try {
+      await createZipFile(slug);
+      console.log(`[Admin] Pre-made zip created successfully for ${slug}`);
+    } catch (error) {
       console.error(`Failed to create pre-made zip for ${slug}:`, error);
-    });
+      // Continue anyway - zip will be created on first download
+    }
 
     return NextResponse.json({
       success: true,
