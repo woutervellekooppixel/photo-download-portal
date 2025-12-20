@@ -41,7 +41,7 @@ export async function GET(
     const preMadeZip = await getZipFile(slug);
     if (preMadeZip) {
       console.log(`[Download] Using pre-made zip for ${slug}`);
-      return new NextResponse(preMadeZip, {
+      return new NextResponse(new Uint8Array(preMadeZip), {
         headers: {
           "Content-Type": "application/zip",
           "Content-Disposition": `attachment; filename="${slug}.zip"`,
