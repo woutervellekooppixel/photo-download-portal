@@ -698,6 +698,9 @@ export default function AdminDashboard() {
                     {uploads.reduce((acc, u) => acc + u.downloads, 0)}
                   </div>
                   <p className="text-xs text-gray-500">Totaal Downloads</p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    {uploads.reduce((acc, u) => acc + (u.downloadHistory?.length || 0), 0)} events
+                  </p>
                 </CardContent>
               </Card>
               <Card>
@@ -711,6 +714,50 @@ export default function AdminDashboard() {
                 </CardContent>
               </Card>
             </div>
+
+            {/* Download Activity Summary */}
+            <Card className="mb-4">
+              <CardHeader>
+                <CardTitle className="text-lg">📊 Download Activiteit (laatste 7 dagen)</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4 md:grid-cols-3">
+                  {(() => {
+                    const last7Days = uploads.reduce((acc, u) => {
+                      const recentDownloads = u.downloadHistory?.filter(d => {
+                        const downloadDate = new Date(d.timestamp);
+                        const weekAgo = new Date();
+                        weekAgo.setDate(weekAgo.getDate() - 7);
+                        return downloadDate > weekAgo;
+                      }) || [];
+                      
+                      return {
+                        all: acc.all + recentDownloads.filter(d => d.type === 'all').length,
+                        single: acc.single + recentDownloads.filter(d => d.type === 'single').length,
+                        selected: acc.selected + recentDownloads.filter(d => d.type === 'selected').length,
+                      };
+                    }, { all: 0, single: 0, selected: 0 });
+
+                    return (
+                      <>
+                        <div>
+                          <div className="text-xl font-bold text-gray-900">📦 {last7Days.all}</div>
+                          <p className="text-xs text-gray-500">Alle bestanden downloads</p>
+                        </div>
+                        <div>
+                          <div className="text-xl font-bold text-gray-900">📄 {last7Days.single}</div>
+                          <p className="text-xs text-gray-500">Enkele foto downloads</p>
+                        </div>
+                        <div>
+                          <div className="text-xl font-bold text-gray-900">📋 {last7Days.selected}</div>
+                          <p className="text-xs text-gray-500">Selectie downloads</p>
+                        </div>
+                      </>
+                    );
+                  })()}
+                </div>
+              </CardContent>
+            </Card>
 
             {monthlyCost && (
               <Card className="mb-6">
@@ -1165,7 +1212,17 @@ export default function AdminDashboard() {
                       <div className="text-xs text-gray-600 space-y-1">
                         <p>Aangemaakt: {formatDate(new Date(upload.createdAt))}</p>
                         <p>Verloopt: {formatDate(new Date(upload.expiresAt))}</p>
-                        <p>Downloads: {upload.downloads}×</p>
+                        <div className="flex items-center gap-2">
+                          <p>Downloads: {upload.downloads}×</p>
+                          {upload.downloadHistory && upload.downloadHistory.length > 0 && (
+                            <button
+                              onClick={() => setExpandedUpload(expandedUpload === upload.slug ? null : upload.slug)}
+                              className="text-blue-600 hover:text-blue-800 underline"
+                            >
+                              {expandedUpload === upload.slug ? 'Verberg details' : 'Bekijk details'}
+                            </button>
+                          )}
+                        </div>
                         {upload.ratings && Object.keys(upload.ratings).length > 0 && (
                           <p className="flex items-center gap-1">
                             <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
@@ -1173,6 +1230,46 @@ export default function AdminDashboard() {
                           </p>
                         )}
                       </div>
+
+                      {/* Download History Details */}
+                      {isExpanded && upload.downloadHistory && upload.downloadHistory.length > 0 && (
+                        <div className="mt-4 pt-4 border-t">
+                          <p className="text-sm font-semibold mb-3">Download Geschiedenis ({upload.downloadHistory.length})</p>
+                          <div className="space-y-2 max-h-64 overflow-y-auto">
+                            {upload.downloadHistory.slice().reverse().map((download, idx) => (
+                              <div key={idx} className="bg-gray-50 p-3 rounded text-xs space-y-1">
+                                <div className="flex items-center justify-between">
+                                  <span className="font-medium">
+                                    {download.type === 'all' && '📦 Alle bestanden'}
+                                    {download.type === 'single' && '📄 Enkel bestand'}
+                                    {download.type === 'selected' && `📋 ${download.files?.length || 0} geselecteerd`}
+                                  </span>
+                                  <span className="text-gray-500">
+                                    {new Date(download.timestamp).toLocaleString('nl-NL', {
+                                      day: '2-digit',
+                                      month: 'short',
+                                      hour: '2-digit',
+                                      minute: '2-digit'
+                                    })}
+                                  </span>
+                                </div>
+                                {download.files && download.files.length > 0 && (
+                                  <p className="text-gray-600">
+                                    Bestanden: {download.files.map(f => {
+                                      const file = upload.files.find(uf => uf.key === f);
+                                      return file?.name.split('/').pop() || f;
+                                    }).slice(0, 3).join(', ')}
+                                    {download.files.length > 3 && ` + ${download.files.length - 3} meer`}
+                                  </p>
+                                )}
+                                {download.ip && (
+                                  <p className="text-gray-500">IP: {download.ip}</p>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                       
                       {/* Photo grid for preview selection */}
                       {isExpanded && imageFiles.length > 0 && (
