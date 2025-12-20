@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getMetadata, getFile } from '@/lib/r2';
+import { getMetadata, getFile, updateDownloadCount } from '@/lib/r2';
 import archiver from 'archiver';
 import { downloadRateLimit } from '@/lib/rateLimit';
 
@@ -101,6 +101,11 @@ export async function GET(
       buffer.set(chunk, offset);
       offset += chunk.length;
     }
+
+    // Track download
+    const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
+    const userAgent = request.headers.get('user-agent') || 'unknown';
+    await updateDownloadCount(slug, 'selected', folderFiles.map(f => f.key), ip, userAgent);
 
     // Sanitize folder name for filename
     const safeFolderName = folderPath.replace(/[^a-zA-Z0-9-_]/g, '-');

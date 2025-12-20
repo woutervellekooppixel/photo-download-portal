@@ -42,8 +42,10 @@ export async function GET(
     // Get file from R2
     const buffer = await getFile(fileKey);
 
-    // Update download count
-    await updateDownloadCount(slug);
+    // Update download count with tracking
+    const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
+    const userAgent = request.headers.get('user-agent') || 'unknown';
+    await updateDownloadCount(slug, 'single', [fileKey], ip, userAgent);
 
     // Send notification email
     sendDownloadNotification(slug, 1).catch(console.error);

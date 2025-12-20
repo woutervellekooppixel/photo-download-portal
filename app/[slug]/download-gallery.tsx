@@ -297,6 +297,19 @@ export default function DownloadGallery({
     if (selectedFiles.size === 0) return;
     
     setDownloading(true);
+    setDownloadProgress(0);
+    
+    // Fake progress animation
+    const progressInterval = setInterval(() => {
+      setDownloadProgress(prev => {
+        if (prev >= 95) {
+          clearInterval(progressInterval);
+          return 95;
+        }
+        return prev + 5;
+      });
+    }, 150);
+    
     try {
       // Download individually if only one file
       if (selectedFiles.size === 1) {
@@ -304,33 +317,44 @@ export default function DownloadGallery({
         const file = metadata.files.find(f => f.key === fileKey);
         if (file) {
           const displayName = file.name.split('/').pop() || file.name;
+          clearInterval(progressInterval);
+          setDownloading(false);
+          setDownloadProgress(0);
           await downloadSingle(file.key, displayName);
         }
       } else {
-        // Create a temporary metadata with only selected files
-        const selectedFilesList = metadata.files.filter(f => selectedFiles.has(f.key));
+        // Download multiple selected files
+        const response = await fetch(`/api/download/${metadata.slug}/selected`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fileKeys: Array.from(selectedFiles) }),
+        });
         
-        // Use the all endpoint but we'll need to filter
-        const response = await fetch(`/api/download/${metadata.slug}/all`);
         if (!response.ok) throw new Error('Download failed');
         
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `${metadata.slug}-selectie.zip`;
+        a.download = `${metadata.slug}-selected.zip`;
         document.body.appendChild(a);
         a.click();
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
+        
+        // Complete progress
+        setDownloadProgress(100);
+        setTimeout(() => {
+          clearInterval(progressInterval);
+          setDownloading(false);
+          setDownloadProgress(0);
+        }, 500);
       }
-      
-      setSelectedFiles(new Set());
-      setIsSelectMode(false);
     } catch (error) {
       console.error("Download failed:", error);
-    } finally {
+      clearInterval(progressInterval);
       setDownloading(false);
+      setDownloadProgress(0);
     }
   };
 

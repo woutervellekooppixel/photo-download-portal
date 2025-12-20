@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getMetadata, getFile, getZipFile, createZipFile, updateDownloadCount } from "@/lib/r2";
+import { getMetadata, getFile, updateDownloadCount } from "@/lib/r2";
 import archiver from "archiver";
-import { sendDownloadNotification } from "@/lib/email";
 import { downloadRateLimit } from "@/lib/rateLimit";
 
 // Configure route for large downloads
 export const maxDuration = 300; // 5 minutes
 export const dynamic = 'force-dynamic';
 
-export async function GET(
+export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
 ) {
@@ -18,6 +17,12 @@ export async function GET(
 
   try {
     const { slug } = await params;
+    const { fileKeys } = await request.json();
+
+    if (!fileKeys || !Array.isArray(fileKeys) || fileKeys.length === 0) {
+      return NextResponse.json({ error: "File keys required" }, { status: 400 });
+    }
+
     const metadata = await getMetadata(slug);
 
     if (!metadata) {
@@ -31,37 +36,20 @@ export async function GET(
       return NextResponse.json({ error: "Expired" }, { status: 410 });
     }
 
-    // Update download count with tracking
-    const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
-    const userAgent = request.headers.get('user-agent') || 'unknown';
-    await updateDownloadCount(slug, 'all', undefined, ip, userAgent);
+    // Filter to only selected files
+    const selectedFiles = metadata.files.filter(f => fileKeys.includes(f.key));
 
-    // Send notification email (async, don't wait)
-    sendDownloadNotification(slug, metadata.files.length).catch(console.error);
-
-    // Try to use pre-made zip first
-    const preMadeZip = await getZipFile(slug);
-    if (preMadeZip) {
-      console.log(`[Download] Using pre-made zip for ${slug}`);
-      return new NextResponse(new Uint8Array(preMadeZip), {
-        headers: {
-          "Content-Type": "application/zip",
-          "Content-Disposition": `attachment; filename="${slug}.zip"`,
-          "Content-Length": preMadeZip.length.toString(),
-        },
-      });
+    if (selectedFiles.length === 0) {
+      return NextResponse.json({ error: "No valid files found" }, { status: 404 });
     }
 
-    // Fallback: create zip on-the-fly with streaming
-    console.log(`[Download] Pre-made zip not found for ${slug}, creating on-the-fly`);
-
-    // Trigger background creation of pre-made zip for next time
-    createZipFile(slug).catch(error => {
-      console.error(`[Download] Failed to create pre-made zip for ${slug}:`, error);
-    });
+    // Track download
+    const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
+    const userAgent = request.headers.get('user-agent') || 'unknown';
+    await updateDownloadCount(slug, 'selected', fileKeys, ip, userAgent);
 
     // Create zip archive with streaming
-    const archive = archiver("zip", { zlib: { level: 6 } }); // Reduced compression for faster processing
+    const archive = archiver("zip", { zlib: { level: 6 } });
     
     // Create a readable stream from the archive
     const stream = new ReadableStream({
@@ -81,7 +69,7 @@ export async function GET(
         // Start adding files to the archive
         (async () => {
           try {
-            for (const file of metadata.files) {
+            for (const file of selectedFiles) {
               const buffer = await getFile(file.key);
               archive.append(buffer, { name: file.name });
             }
@@ -98,7 +86,7 @@ export async function GET(
     return new NextResponse(stream, {
       headers: {
         "Content-Type": "application/zip",
-        "Content-Disposition": `attachment; filename="${slug}.zip"`,
+        "Content-Disposition": `attachment; filename="${slug}-selected.zip"`,
         "Cache-Control": "no-cache",
       },
     });

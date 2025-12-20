@@ -34,6 +34,13 @@ export interface UploadMetadata {
     type: string;
   }[];
   downloads: number;
+  downloadHistory?: {
+    timestamp: string;
+    type: 'all' | 'single' | 'selected';
+    files?: string[]; // File keys that were downloaded
+    ip?: string;
+    userAgent?: string;
+  }[];
   previewImageKey?: string; // Optional: key of the image to show on loading screen
   clientEmail?: string; // Optional: client email for sending notifications
   customMessage?: string; // Optional: custom message to include in email
@@ -193,10 +200,28 @@ export async function getZipFile(slug: string): Promise<Buffer | null> {
   }
 }
 
-export async function updateDownloadCount(slug: string): Promise<void> {
+export async function updateDownloadCount(
+  slug: string,
+  type: 'all' | 'single' | 'selected' = 'all',
+  files?: string[],
+  ip?: string,
+  userAgent?: string
+): Promise<void> {
   const metadata = await getMetadata(slug);
   if (metadata) {
     metadata.downloads = (metadata.downloads || 0) + 1;
+    
+    // Add to download history
+    if (!metadata.downloadHistory) {
+      metadata.downloadHistory = [];
+    }
+    metadata.downloadHistory.push({
+      timestamp: new Date().toISOString(),
+      type,
+      ...(files && { files }),
+      ...(ip && { ip }),
+      ...(userAgent && { userAgent }),
+    });
     await saveMetadata(metadata);
   }
 }
