@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatBytes, formatDate } from "@/lib/utils";
 import { useToast } from "@/components/ui/use-toast";
+import { useAutoLogout } from "@/lib/useAutoLogout";
 
 interface FileWithPreview extends File {
   preview?: string;
@@ -54,6 +55,17 @@ export default function AdminDashboard() {
   const [sendingEmail, setSendingEmail] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
+
+  // Auto logout after 5 hours of inactivity
+  useAutoLogout({ 
+    timeout: 5 * 60 * 60 * 1000, // 5 hours
+    onLogout: () => {
+      toast({
+        title: "Automatisch uitgelogd",
+        description: "Je bent automatisch uitgelogd vanwege inactiviteit.",
+      });
+    }
+  });
 
   useEffect(() => {
     loadUploads();
