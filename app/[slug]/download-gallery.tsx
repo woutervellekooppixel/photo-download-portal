@@ -184,19 +184,20 @@ export default function DownloadGallery({
   const downloadAll = async () => {
     setDownloading(true);
     try {
-      const response = await fetch(`/api/download/${metadata.slug}/all`);
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
+      // Direct download link - browser handles it natively (much faster!)
       const a = document.createElement("a");
-      a.href = url;
+      a.href = `/api/download/${metadata.slug}/all`;
       a.download = `${metadata.slug}.zip`;
       document.body.appendChild(a);
       a.click();
-      window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
+      
+      // Reset downloading state after a short delay
+      setTimeout(() => {
+        setDownloading(false);
+      }, 1000);
     } catch (error) {
       console.error("Download failed:", error);
-    } finally {
       setDownloading(false);
     }
   };
