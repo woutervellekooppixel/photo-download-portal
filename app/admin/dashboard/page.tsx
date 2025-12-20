@@ -436,14 +436,19 @@ export default function AdminDashboard() {
         });
       }
 
+      // Reset form
       setFiles([]);
       setTitle("");
       setSlug("");
       setClientEmail("");
       setCustomMessage("Hi,\n\nHierbij de foto's van afgelopen avond.");
       setRatingsEnabled(false);
+      
+      // Reload uploads list
+      await loadUploads();
+      
+      // Reset progress after list is refreshed
       setUploadProgress(0);
-      loadUploads();
     } catch (error) {
       toast({
         title: "Fout",
