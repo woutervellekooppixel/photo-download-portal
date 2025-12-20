@@ -34,6 +34,7 @@ export default function DownloadGallery({
   const [collapsedFolders, setCollapsedFolders] = useState<Record<string, boolean>>({});
   const [loadingThumbnails, setLoadingThumbnails] = useState(true);
   const [thumbnailsLoaded, setThumbnailsLoaded] = useState(0);
+  const [previewLoaded, setPreviewLoaded] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
   const [isSelectMode, setIsSelectMode] = useState(false);
   const [ratings, setRatings] = useState<Record<string, boolean>>({});
@@ -96,7 +97,24 @@ export default function DownloadGallery({
     const loadThumbnails = async () => {
       setLoadingThumbnails(true);
       setThumbnailsLoaded(0);
+      setPreviewLoaded(false);
       const urls: Record<string, string> = {};
+      
+      // Smooth fake progress from 0 to 100% over 8 seconds
+      const totalDuration = 8000;
+      const intervalTime = 50;
+      const steps = totalDuration / intervalTime;
+      const increment = metadata.files.length / steps;
+      
+      let currentProgress = 0;
+      const progressInterval = setInterval(() => {
+        currentProgress += increment;
+        if (currentProgress >= metadata.files.length) {
+          currentProgress = metadata.files.length;
+          clearInterval(progressInterval);
+        }
+        setThumbnailsLoaded(Math.floor(currentProgress));
+      }, intervalTime);
       
       // Load preview image first for loading screen
       if (previewImage) {
@@ -108,13 +126,14 @@ export default function DownloadGallery({
           if (data.url) {
             urls[previewImage.key] = data.url;
             setThumbnailUrls({ ...urls }); // Update state immediately for preview
+            // previewLoaded will be set by the Image onLoad event
           }
         } catch (error) {
           console.error("Failed to load preview thumbnail:", error);
         }
       }
       
-      // Load all thumbnails in parallel for much faster loading
+      // Load all thumbnails in parallel in the background
       const loadPromises = metadata.files.map(async (file) => {
         // Skip preview image if already loaded
         if (previewImage && file.key === previewImage.key) {
@@ -133,15 +152,6 @@ export default function DownloadGallery({
         }
       });
       
-      // Wait for all thumbnails to load and update progress
-      let loaded = 0;
-      for (const promise of loadPromises) {
-        promise.then(() => {
-          loaded++;
-          setThumbnailsLoaded(loaded);
-        });
-      }
-      
       const results = await Promise.all(loadPromises);
       
       // Collect all URLs
@@ -153,10 +163,12 @@ export default function DownloadGallery({
       
       setThumbnailUrls(urls);
       
-      // Keep loading screen visible for a minimum time to showcase the photo
+      // Hide loading screen after 8 seconds
       setTimeout(() => {
+        clearInterval(progressInterval);
+        setThumbnailsLoaded(metadata.files.length);
         setLoadingThumbnails(false);
-      }, 2500);
+      }, totalDuration);
     };
 
     loadThumbnails();
@@ -445,106 +457,57 @@ export default function DownloadGallery({
         </div>
       </nav>
 
-      {/* Elegant fullscreen loading overlay */}
+      {/* Fullscreen loading overlay */}
       {loadingThumbnails && (
         <div 
-          className="fixed inset-0 z-50 transition-all duration-1000" 
+          className="fixed inset-0 z-50 transition-opacity duration-1000" 
           style={{ opacity: loadingThumbnails ? 1 : 0 }}
         >
-          {/* Fullscreen preview image with zoom animation */}
-          <div className="absolute inset-0 bg-black overflow-hidden">
+          {/* Fullscreen preview image - sharp and clear */}
+          <div className="absolute inset-0 bg-black">
             {previewImage && thumbnailUrls[previewImage.key] ? (
-              <div className="relative w-full h-full animate-in zoom-in-95 fade-in duration-[2000ms]">
-                <Image
-                  src={thumbnailUrls[previewImage.key]}
-                  alt="Loading preview"
-                  fill
-                  className="object-cover scale-105"
-                  sizes="100vw"
-                  priority
-                />
-              </div>
+              <Image
+                src={thumbnailUrls[previewImage.key]}
+                alt="Loading preview"
+                fill
+                className="object-cover animate-in fade-in duration-700"
+                sizes="100vw"
+                priority
+                onLoad={() => setPreviewLoaded(true)}
+              />
             ) : (
-              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-                <div className="relative w-40 h-40">
-                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500/30 to-purple-600/30 rounded-full animate-pulse blur-2xl" />
-                  <ImageIcon className="absolute inset-0 m-auto h-20 w-20 text-white/30 animate-pulse" />
+              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-900 to-gray-800">
+                <div className="relative w-32 h-32">
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full opacity-30 animate-pulse" />
+                  <ImageIcon className="absolute inset-0 m-auto h-16 w-16 text-white/40" />
                 </div>
               </div>
             )}
           </div>
           
-          {/* Elegant gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-black/60 backdrop-blur-[2px]" />
-          
-          {/* Center content */}
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            {/* Logo/Brand */}
-            <div className="mb-16 animate-in fade-in slide-in-from-bottom-4 duration-700">
-              <div className="text-white/90 text-2xl tracking-tight">
-                <span className="font-bold">WOUTER.</span>
-                <span className="font-light">PHOTO</span>
+          {/* Only show progress when preview image is loaded */}
+          {previewLoaded && (
+            <>
+              {/* Instagram-style progress bar at bottom */}
+              <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20 animate-in fade-in duration-500">
+                <div 
+                  className="h-full bg-white transition-all duration-300 ease-out"
+                  style={{ 
+                    width: `${(thumbnailsLoaded / metadata.files.length) * 100}%` 
+                  }}
+                />
               </div>
-            </div>
-            
-            {/* Progress indicator */}
-            <div className="relative animate-in fade-in slide-in-from-bottom-4 duration-700 delay-150">
-              {/* Minimalist progress ring */}
-              <svg className="w-40 h-40 transform -rotate-90" viewBox="0 0 140 140">
-                {/* Background ring with glow */}
-                <defs>
-                  <filter id="glow">
-                    <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
-                    <feMerge>
-                      <feMergeNode in="coloredBlur"/>
-                      <feMergeNode in="SourceGraphic"/>
-                    </feMerge>
-                  </filter>
-                </defs>
-                <circle
-                  cx="70"
-                  cy="70"
-                  r="62"
-                  stroke="white"
-                  strokeWidth="1"
-                  fill="none"
-                  className="opacity-10"
-                />
-                {/* Animated progress ring */}
-                <circle
-                  cx="70"
-                  cy="70"
-                  r="62"
-                  stroke="white"
-                  strokeWidth="1.5"
-                  fill="none"
-                  strokeDasharray={`${2 * Math.PI * 62}`}
-                  strokeDashoffset={`${2 * Math.PI * 62 * (1 - (thumbnailsLoaded / metadata.files.length))}`}
-                  className="transition-all duration-700 ease-out"
-                  strokeLinecap="round"
-                  filter="url(#glow)"
-                />
-              </svg>
               
-              {/* Elegant percentage display */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-center space-y-3">
-                  <div className="text-6xl font-extralight text-white tracking-tight tabular-nums">
-                    {Math.round((thumbnailsLoaded / metadata.files.length) * 100)}
-                    <span className="text-3xl opacity-60">%</span>
-                  </div>
-                  <div className="text-xs font-light text-white/70 tracking-widest uppercase">
-                    {thumbnailsLoaded} van {metadata.files.length}
+              {/* Subtle percentage indicator bottom center */}
+              <div className="absolute bottom-8 left-0 right-0 flex justify-center animate-in fade-in duration-700 delay-300">
+                <div className="bg-black/30 backdrop-blur-sm px-6 py-2 rounded-full">
+                  <div className="text-white text-sm font-light tracking-wide">
+                    {Math.round((thumbnailsLoaded / metadata.files.length) * 100)}% • {thumbnailsLoaded} van {metadata.files.length}
                   </div>
                 </div>
               </div>
-            </div>
-            
-            {/* Loading text */}
-            <div className="mt-16 text-white/60 text-sm font-light tracking-wide animate-in fade-in duration-700 delay-300">
-              Bestanden laden...
-            </div>
-          </div>
+            </>
+          )}
         </div>
       )}
 
