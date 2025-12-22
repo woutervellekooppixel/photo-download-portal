@@ -201,49 +201,26 @@ export default function DownloadGallery({
 
   // Load background image
   useEffect(() => {
-    // Always use default background - check for different extensions
+    // Check for default background via API
     const checkBackground = async () => {
-      const extensions = ['jpg', 'jpeg', 'png', 'svg', 'webp'];
-      
-      // First try local public directory (development)
-      for (const ext of extensions) {
-        try {
-          const url = `/default-background.${ext}`;
-          const response = await fetch(url, { method: 'HEAD' });
-          if (response.ok) {
-            setBackgroundUrl(url);
-            // If no preview image is set, mark as loaded immediately
-            if (!metadata.previewImageKey) {
-              setPreviewLoaded(true);
-            }
-            return;
+      try {
+        const url = '/api/background/default-background';
+        const response = await fetch(url, { method: 'HEAD' });
+        if (response.ok) {
+          setBackgroundUrl(url);
+          // If no preview image is set, mark as loaded immediately
+          if (!metadata.previewImageKey) {
+            setPreviewLoaded(true);
           }
-        } catch (error) {
-          // Continue to next extension
+          return;
         }
+      } catch (error) {
+        // Continue to fallback
       }
       
-      // Then try R2 public URL (production)
-      const r2BaseUrl = process.env.NEXT_PUBLIC_R2_PUBLIC_URL || 'https://pub-8e5c3f0a69f64c26b3c64d93b8a9ae61.r2.dev';
-      for (const ext of extensions) {
-        try {
-          const url = `${r2BaseUrl}/default-background.${ext}`;
-          const response = await fetch(url, { method: 'HEAD' });
-          if (response.ok) {
-            setBackgroundUrl(url);
-            // If no preview image is set, mark as loaded immediately
-            if (!metadata.previewImageKey) {
-              setPreviewLoaded(true);
-            }
-            return;
-          }
-        } catch (error) {
-          // Continue to next extension
-        }
-      }
-      
-      // Fallback to SVG from public
-      setBackgroundUrl('/default-background.svg');
+      // Fallback to local SVG
+      const localUrl = '/default-background.svg';
+      setBackgroundUrl(localUrl);
       if (!metadata.previewImageKey) {
         setPreviewLoaded(true);
       }

@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
 
     // Determine file extension and content type
     const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
-    const filename = `default-background.${ext}`;
+    const filename = `backgrounds/default-background.${ext}`;
     
     const contentType = file.type || 
       (ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' :
@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
        ext === 'svg' ? 'image/svg+xml' :
        'image/jpeg');
 
-    // Upload to R2 in the root
+    // Upload to R2 in backgrounds folder (same as other uploads)
     await r2Client.send(
       new PutObjectCommand({
         Bucket: process.env.R2_BUCKET_NAME!,
@@ -40,11 +40,12 @@ export async function POST(req: NextRequest) {
       })
     );
 
-    const publicUrl = `${process.env.R2_PUBLIC_URL}/${filename}`;
+    // Use the thumbnail API endpoint to serve the image (this works for all R2 files)
+    const publicUrl = `/api/background/default-background`;
 
     return NextResponse.json({ 
       success: true, 
-      filename,
+      filename: `default-background.${ext}`,
       url: publicUrl
     });
   } catch (error) {
