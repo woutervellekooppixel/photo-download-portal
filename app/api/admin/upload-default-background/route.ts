@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdminAuth } from "@/lib/auth";
-import { r2 } from "@/lib/r2";
+import { r2Client } from "@/lib/r2";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 
 export async function POST(req: NextRequest) {
@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
        'image/jpeg');
 
     // Upload to R2 in the root
-    await r2.send(
+    await r2Client.send(
       new PutObjectCommand({
         Bucket: process.env.R2_BUCKET_NAME!,
         Key: filename,
