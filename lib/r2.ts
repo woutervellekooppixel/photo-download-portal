@@ -42,6 +42,7 @@ export interface UploadMetadata {
     userAgent?: string;
   }[];
   previewImageKey?: string; // Optional: key of the image to show on loading screen
+  backgroundImageKey?: string; // Optional: key of the image to use as background
   clientEmail?: string; // Optional: client email for sending notifications
   customMessage?: string; // Optional: custom message to include in email
   ratings?: Record<string, boolean>; // Optional: client ratings for photos (fileKey -> rated)

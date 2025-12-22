@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Upload, X, Copy, Trash2, LogOut, Check, ExternalLink, Mail, Star } from "lucide-react";
+import { Upload, X, Copy, Trash2, LogOut, Check, ExternalLink, Mail, Star, Settings, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,6 +29,7 @@ interface Upload {
     userAgent?: string;
   }[];
   previewImageKey?: string;
+  backgroundImageKey?: string;
   clientEmail?: string;
   customMessage?: string;
   ratings?: Record<string, boolean>;
@@ -63,6 +64,10 @@ export default function AdminDashboard() {
   const [templates, setTemplates] = useState<Array<{ name: string; email: string; message: string }>>([]);
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
   const [templateName, setTemplateName] = useState("");
+  const [showSettingsDialog, setShowSettingsDialog] = useState(false);
+  const [defaultBackgroundFile, setDefaultBackgroundFile] = useState<File | null>(null);
+  const [defaultBackgroundPreview, setDefaultBackgroundPreview] = useState<string>("/default-background.svg");
+  const [showStatisticsDialog, setShowStatisticsDialog] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
 
@@ -680,144 +685,41 @@ export default function AdminDashboard() {
             <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
             <p className="text-gray-600">Upload en beheer je foto downloads</p>
           </div>
-          <Button variant="outline" onClick={handleLogout}>
-            <LogOut className="h-4 w-4 mr-2" />
-            Uitloggen
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setShowStatisticsDialog(true)}>
+              <BarChart3 className="h-4 w-4 mr-2" />
+              Statistieken
+            </Button>
+            <Button variant="outline" onClick={() => setShowSettingsDialog(true)}>
+              <Settings className="h-4 w-4 mr-2" />
+              Instellingen
+            </Button>
+            <Button variant="outline" onClick={handleLogout}>
+              <LogOut className="h-4 w-4 mr-2" />
+              Uitloggen
+            </Button>
+          </div>
         </div>
 
-        {/* Statistics Summary */}
+        {/* Compact Summary */}
         {uploads.length > 0 && (
-          <>
-            <div className="grid gap-4 md:grid-cols-4 mb-4">
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="text-2xl font-bold">
-                    {uploads.filter(u => new Date(u.expiresAt) > new Date()).length}
-                  </div>
-                  <p className="text-xs text-gray-500">Actieve Uploads</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="text-2xl font-bold">
-                    {uploads.filter(u => new Date(u.expiresAt) > new Date()).reduce((acc, u) => acc + u.files.length, 0)}
-                  </div>
-                  <p className="text-xs text-gray-500">Totaal Bestanden</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="text-2xl font-bold">
-                    {uploads.filter(u => new Date(u.expiresAt) > new Date()).reduce((acc, u) => acc + u.downloads, 0)}
-                  </div>
-                  <p className="text-xs text-gray-500">Totaal Downloads</p>
-                  <p className="text-xs text-gray-400 mt-1">
-                    {uploads.filter(u => new Date(u.expiresAt) > new Date()).reduce((acc, u) => acc + (u.downloadHistory?.length || 0), 0)} events
-                  </p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="text-2xl font-bold">
-                    {formatBytes(uploads.filter(u => new Date(u.expiresAt) > new Date()).reduce((acc, u) => 
-                      acc + u.files.reduce((sum, f) => sum + f.size, 0), 0
-                    ))}
-                  </div>
-                  <p className="text-xs text-gray-500">Totale Storage</p>
-                </CardContent>
-              </Card>
+          <div className="mb-6 p-4 bg-white rounded-lg border border-gray-200">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gray-600">
+                {uploads.filter(u => new Date(u.expiresAt) > new Date()).length} actieve uploads • {' '}
+                {uploads.filter(u => new Date(u.expiresAt) > new Date()).reduce((acc, u) => acc + u.files.length, 0)} bestanden • {' '}
+                {uploads.filter(u => new Date(u.expiresAt) > new Date()).reduce((acc, u) => acc + u.downloads, 0)} downloads
+              </span>
+              <Button 
+                variant="link" 
+                size="sm"
+                onClick={() => setShowStatisticsDialog(true)}
+                className="text-blue-600"
+              >
+                Zie alle statistieken →
+              </Button>
             </div>
-
-            {/* Download Activity Summary */}
-            <Card className="mb-4">
-              <CardHeader>
-                <CardTitle className="text-lg">📊 Download Activiteit (laatste 7 dagen)</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid gap-4 md:grid-cols-3">
-                  {(() => {
-                    const activeUploads = uploads.filter(u => new Date(u.expiresAt) > new Date());
-                    const last7Days = activeUploads.reduce((acc, u) => {
-                      const recentDownloads = u.downloadHistory?.filter(d => {
-                        const downloadDate = new Date(d.timestamp);
-                        const weekAgo = new Date();
-                        weekAgo.setDate(weekAgo.getDate() - 7);
-                        return downloadDate > weekAgo;
-                      }) || [];
-                      
-                      return {
-                        all: acc.all + recentDownloads.filter(d => d.type === 'all').length,
-                        single: acc.single + recentDownloads.filter(d => d.type === 'single').length,
-                        selected: acc.selected + recentDownloads.filter(d => d.type === 'selected').length,
-                      };
-                    }, { all: 0, single: 0, selected: 0 });
-
-                    return (
-                      <>
-                        <div>
-                          <div className="text-xl font-bold text-gray-900">📦 {last7Days.all}</div>
-                          <p className="text-xs text-gray-500">Alle bestanden downloads</p>
-                        </div>
-                        <div>
-                          <div className="text-xl font-bold text-gray-900">📄 {last7Days.single}</div>
-                          <p className="text-xs text-gray-500">Enkele foto downloads</p>
-                        </div>
-                        <div>
-                          <div className="text-xl font-bold text-gray-900">📋 {last7Days.selected}</div>
-                          <p className="text-xs text-gray-500">Selectie downloads</p>
-                        </div>
-                      </>
-                    );
-                  })()}
-                </div>
-              </CardContent>
-            </Card>
-
-            {monthlyCost && (
-              <Card className="mb-6">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    💰 Maandelijkse Kosten
-                    <span className="text-sm font-normal text-gray-600">
-                      ({monthlyCost.month})
-                    </span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid gap-4 md:grid-cols-4">
-                    <div>
-                      <div className="text-2xl font-bold text-gray-900">
-                        ${monthlyCost.total.toFixed(4)}
-                      </div>
-                      <p className="text-xs text-gray-500">Totaal deze maand</p>
-                    </div>
-                    <div>
-                      <div className="text-lg font-semibold text-gray-800">
-                        {monthlyCost.storage.toFixed(2)} GB
-                      </div>
-                      <p className="text-xs text-gray-500">Storage (${(monthlyCost.storage * 0.015).toFixed(4)})</p>
-                    </div>
-                    <div>
-                      <div className="text-lg font-semibold text-gray-800">
-                        {(monthlyCost.operations.listFiles + monthlyCost.operations.putFile + monthlyCost.operations.deleteFile).toLocaleString()}
-                      </div>
-                      <p className="text-xs text-gray-500">Class A Operations</p>
-                    </div>
-                    <div>
-                      <div className="text-lg font-semibold text-gray-800">
-                        {formatBytes(monthlyCost.bandwidth)}
-                      </div>
-                      <p className="text-xs text-gray-500">Bandwidth (gratis!)</p>
-                    </div>
-                  </div>
-                  <p className="text-xs text-gray-500 mt-3">
-                    💡 Kosten resetten automatisch elke maand
-                  </p>
-                </CardContent>
-              </Card>
-            )}
-          </>
+          </div>
         )}
 
         <div className="grid gap-6 md:grid-cols-2">
@@ -827,9 +729,9 @@ export default function AdminDashboard() {
               <CardTitle>Nieuwe Upload</CardTitle>
               <CardDescription>Upload foto's voor een nieuwe klant</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-3">
               <div>
-                <label className="text-sm font-medium mb-2 block">
+                <label className="text-sm font-medium mb-1 block">
                   Transfer titel *
                 </label>
                 <Input
@@ -848,14 +750,11 @@ export default function AdminDashboard() {
                     }
                   }}
                 />
-                <p className="text-xs text-gray-500 mt-1">
-                  Deze titel zie je terug in de email en het onderwerp
-                </p>
               </div>
 
               <div>
-                <label className="text-sm font-medium mb-2 block">
-                  Custom URL (automatisch gegenereerd)
+                <label className="text-sm font-medium mb-1 block">
+                  Custom URL
                 </label>
                 <Input
                   placeholder="fotoshoot-emma-tom"
@@ -865,14 +764,14 @@ export default function AdminDashboard() {
                   }}
                 />
                 {slug && (
-                  <p className="text-xs text-gray-500 mt-1">
-                    Link: download.wouter.photo/{slug}
+                  <p className="text-xs text-blue-600 mt-1">
+                    → download.wouter.photo/{slug}
                   </p>
                 )}
               </div>
 
               <div>
-                <label className="text-sm font-medium mb-2 block">
+                <label className="text-sm font-medium mb-1 block">
                   Verloopt over
                 </label>
                 <div className="flex gap-2 items-center">
@@ -882,7 +781,7 @@ export default function AdminDashboard() {
                     max="365"
                     value={expiryDays}
                     onChange={(e) => setExpiryDays(Math.max(1, Math.min(365, parseInt(e.target.value) || 60)))}
-                    className="w-24"
+                    className="w-20"
                   />
                   <span className="text-sm text-gray-600">dagen</span>
                   <div className="flex gap-1 ml-auto">
@@ -891,6 +790,7 @@ export default function AdminDashboard() {
                       size="sm"
                       variant="outline"
                       onClick={() => setExpiryDays(7)}
+                      className="h-8 px-2 text-xs"
                     >
                       7d
                     </Button>
@@ -899,6 +799,7 @@ export default function AdminDashboard() {
                       size="sm"
                       variant="outline"
                       onClick={() => setExpiryDays(30)}
+                      className="h-8 px-2 text-xs"
                     >
                       30d
                     </Button>
@@ -907,24 +808,24 @@ export default function AdminDashboard() {
                       size="sm"
                       variant="outline"
                       onClick={() => setExpiryDays(60)}
+                      className="h-8 px-2 text-xs"
                     >
                       60d
                     </Button>
                   </div>
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  Vervaldatum: {new Date(Date.now() + expiryDays * 24 * 60 * 60 * 1000).toLocaleDateString('nl-NL', { 
+                  {new Date(Date.now() + expiryDays * 24 * 60 * 60 * 1000).toLocaleDateString('nl-NL', { 
                     day: 'numeric', 
-                    month: 'long', 
-                    year: 'numeric' 
+                    month: 'short'
                   })}
                 </p>
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <label className="text-sm font-medium block">Client email (optioneel)</label>
-                  <div className="flex gap-2">
+                  <div className="flex gap-1">
                     {templates.length > 0 && (
                       <select
                         onChange={(e) => {
@@ -933,7 +834,7 @@ export default function AdminDashboard() {
                             e.target.value = "";
                           }
                         }}
-                        className="text-xs border border-gray-300 rounded px-2 py-1"
+                        className="text-xs border border-gray-300 rounded px-2 py-1 h-8"
                       >
                         <option value="">Laad template...</option>
                         {templates.map((template, index) => (
@@ -948,8 +849,9 @@ export default function AdminDashboard() {
                       size="sm"
                       variant="outline"
                       onClick={() => setShowTemplateDialog(true)}
+                      className="h-8 px-2 text-xs"
                     >
-                      Opslaan als template
+                      Opslaan
                     </Button>
                   </div>
                 </div>
@@ -958,26 +860,21 @@ export default function AdminDashboard() {
                   placeholder="naam@voorbeeld.nl"
                   value={clientEmail}
                   onChange={(e) => setClientEmail(e.target.value)}
+                  className="h-9"
                 />
-                <p className="text-xs text-gray-500">
-                  Voor het verzenden van de download link naar je klant
-                </p>
 
                 <div>
                   <label className="text-sm font-medium mb-1 block">Persoonlijk bericht</label>
                   <textarea
                     value={customMessage}
                     onChange={(e) => setCustomMessage(e.target.value)}
-                    rows={10}
+                    rows={6}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Dit bericht wordt toegevoegd aan de email. Hieronder komt automatisch de download link, sociale media en handtekening.
-                  </p>
                 </div>
 
                 <div>
-                  <label className="flex items-center gap-2 text-sm font-medium cursor-pointer">
+                  <label className="flex items-center gap-2 text-sm cursor-pointer">
                     <input
                       type="checkbox"
                       checked={ratingsEnabled}
@@ -986,15 +883,12 @@ export default function AdminDashboard() {
                     />
                     <span>Foto waardering inschakelen</span>
                   </label>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Laat klanten foto's beoordelen met een sterretje
-                  </p>
                 </div>
               </div>
 
-              <div className="border-2 border-dashed rounded-lg p-8 text-center border-gray-300 bg-white">
-                <Upload className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                <p className="text-sm text-gray-600 mb-4">
+              <div className="border-2 border-dashed rounded-lg p-6 text-center border-gray-300 bg-white">
+                <Upload className="h-10 w-10 mx-auto mb-3 text-gray-400" />
+                <p className="text-sm text-gray-600 mb-3">
                   Selecteer bestanden om te uploaden
                 </p>
                 <div className="flex gap-3 justify-center">
@@ -1245,46 +1139,6 @@ export default function AdminDashboard() {
                           </p>
                         )}
                       </div>
-
-                      {/* Download History Details */}
-                      {isExpanded && upload.downloadHistory && upload.downloadHistory.length > 0 && (
-                        <div className="mt-4 pt-4 border-t">
-                          <p className="text-sm font-semibold mb-3">Download Geschiedenis ({upload.downloadHistory.length})</p>
-                          <div className="space-y-2 max-h-64 overflow-y-auto">
-                            {upload.downloadHistory.slice().reverse().map((download, idx) => (
-                              <div key={idx} className="bg-gray-50 p-3 rounded text-xs space-y-1">
-                                <div className="flex items-center justify-between">
-                                  <span className="font-medium">
-                                    {download.type === 'all' && '📦 Alle bestanden'}
-                                    {download.type === 'single' && '📄 Enkel bestand'}
-                                    {download.type === 'selected' && `📋 ${download.files?.length || 0} geselecteerd`}
-                                  </span>
-                                  <span className="text-gray-500">
-                                    {new Date(download.timestamp).toLocaleString('nl-NL', {
-                                      day: '2-digit',
-                                      month: 'short',
-                                      hour: '2-digit',
-                                      minute: '2-digit'
-                                    })}
-                                  </span>
-                                </div>
-                                {download.files && download.files.length > 0 && (
-                                  <p className="text-gray-600">
-                                    Bestanden: {download.files.map(f => {
-                                      const file = upload.files.find(uf => uf.key === f);
-                                      return file?.name.split('/').pop() || f;
-                                    }).slice(0, 3).join(', ')}
-                                    {download.files.length > 3 && ` + ${download.files.length - 3} meer`}
-                                  </p>
-                                )}
-                                {download.ip && (
-                                  <p className="text-gray-500">IP: {download.ip}</p>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
                       
                       {/* Photo grid for preview selection */}
                       {isExpanded && imageFiles.length > 0 && (
@@ -1342,11 +1196,11 @@ export default function AdminDashboard() {
                         </div>
                       )}
                     </div>
-                    );
-                  })
-                )}
-              </div>
-            </CardContent>
+                  );
+                })
+              )}
+            </div>
+          </CardContent>
           </Card>
         </div>
 
@@ -1401,7 +1255,6 @@ export default function AdminDashboard() {
             )}
           </Card>
         )}
-      </div>
 
       {/* Email Dialog */}
       {emailDialogOpen && selectedUploadForEmail && (
@@ -1574,6 +1427,344 @@ export default function AdminDashboard() {
           </div>
         </div>
       )}
+
+      {/* Settings Dialog */}
+      {showSettingsDialog && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg max-w-xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold">Instellingen</h2>
+                <button
+                  onClick={() => setShowSettingsDialog(false)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Default Background */}
+              <div>
+                <h3 className="text-lg font-semibold mb-3">Standaard Achtergrond</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Upload een afbeelding die als standaard achtergrond wordt gebruikt op alle download pagina's.
+                </p>
+                
+                {/* Current Background Preview */}
+                <div className="mb-4">
+                  <p className="text-sm font-medium mb-2">Huidige achtergrond:</p>
+                  <div className="relative w-full h-48 rounded-lg overflow-hidden border-2 border-gray-200">
+                    <img
+                      src={defaultBackgroundPreview}
+                      alt="Huidige achtergrond"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                </div>
+
+                {/* File Upload */}
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Upload nieuwe achtergrond:
+                  </label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setDefaultBackgroundFile(file);
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                          setDefaultBackgroundPreview(e.target?.result as string);
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200"
+                  />
+                  <p className="text-xs text-gray-500 mt-2">
+                    💡 Aanbevolen: minimaal 1920x1080px voor beste resultaat
+                  </p>
+                </div>
+
+                {defaultBackgroundFile && (
+                  <Button
+                    onClick={async () => {
+                      const formData = new FormData();
+                      formData.append('file', defaultBackgroundFile);
+                      
+                      try {
+                        const res = await fetch('/api/admin/upload-default-background', {
+                          method: 'POST',
+                          body: formData,
+                        });
+                        
+                        if (res.ok) {
+                          toast({
+                            title: "Opgeslagen!",
+                            description: "Standaard achtergrond is bijgewerkt",
+                          });
+                          setDefaultBackgroundFile(null);
+                        } else {
+                          throw new Error('Upload failed');
+                        }
+                      } catch (error) {
+                        toast({
+                          title: "Fout",
+                          description: "Uploaden mislukt",
+                          variant: "destructive",
+                        });
+                      }
+                    }}
+                    className="w-full"
+                  >
+                    Achtergrond Opslaan
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            <div className="p-4 border-t bg-gray-50 flex gap-3">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowSettingsDialog(false);
+                  setDefaultBackgroundFile(null);
+                }}
+                className="flex-1"
+              >
+                Sluiten
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Statistics Dialog */}
+      {showStatisticsDialog && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg max-w-5xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b sticky top-0 bg-white z-10">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold">📊 Statistieken</h2>
+                <button
+                  onClick={() => setShowStatisticsDialog(false)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Overview Stats */}
+              <div>
+                <h3 className="text-lg font-semibold mb-4">Overzicht</h3>
+                <div className="grid gap-4 md:grid-cols-4">
+                  <Card>
+                    <CardContent className="pt-6">
+                      <div className="text-2xl font-bold">
+                        {uploads.filter(u => new Date(u.expiresAt) > new Date()).length}
+                      </div>
+                      <p className="text-xs text-gray-500">Actieve Uploads</p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="pt-6">
+                      <div className="text-2xl font-bold">
+                        {uploads.filter(u => new Date(u.expiresAt) > new Date()).reduce((acc, u) => acc + u.files.length, 0)}
+                      </div>
+                      <p className="text-xs text-gray-500">Totaal Bestanden</p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="pt-6">
+                      <div className="text-2xl font-bold">
+                        {uploads.filter(u => new Date(u.expiresAt) > new Date()).reduce((acc, u) => acc + u.downloads, 0)}
+                      </div>
+                      <p className="text-xs text-gray-500">Totaal Downloads</p>
+                      <p className="text-xs text-gray-400 mt-1">
+                        {uploads.filter(u => new Date(u.expiresAt) > new Date()).reduce((acc, u) => acc + (u.downloadHistory?.length || 0), 0)} events
+                      </p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="pt-6">
+                      <div className="text-2xl font-bold">
+                        {formatBytes(uploads.filter(u => new Date(u.expiresAt) > new Date()).reduce((acc, u) => 
+                          acc + u.files.reduce((sum, f) => sum + f.size, 0), 0
+                        ))}
+                      </div>
+                      <p className="text-xs text-gray-500">Totale Storage</p>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+
+              {/* Download Activity */}
+              <div>
+                <h3 className="text-lg font-semibold mb-4">Download Activiteit (laatste 7 dagen)</h3>
+                <div className="grid gap-4 md:grid-cols-3">
+                  {(() => {
+                    const activeUploads = uploads.filter(u => new Date(u.expiresAt) > new Date());
+                    const last7Days = activeUploads.reduce((acc, u) => {
+                      const recentDownloads = u.downloadHistory?.filter(d => {
+                        const downloadDate = new Date(d.timestamp);
+                        const weekAgo = new Date();
+                        weekAgo.setDate(weekAgo.getDate() - 7);
+                        return downloadDate > weekAgo;
+                      }) || [];
+                      
+                      return {
+                        all: acc.all + recentDownloads.filter(d => d.type === 'all').length,
+                        single: acc.single + recentDownloads.filter(d => d.type === 'single').length,
+                        selected: acc.selected + recentDownloads.filter(d => d.type === 'selected').length,
+                      };
+                    }, { all: 0, single: 0, selected: 0 });
+
+                    return (
+                      <>
+                        <Card>
+                          <CardContent className="pt-6">
+                            <div className="text-xl font-bold text-gray-900">📦 {last7Days.all}</div>
+                            <p className="text-xs text-gray-500">Alle bestanden downloads</p>
+                          </CardContent>
+                        </Card>
+                        <Card>
+                          <CardContent className="pt-6">
+                            <div className="text-xl font-bold text-gray-900">📄 {last7Days.single}</div>
+                            <p className="text-xs text-gray-500">Enkele foto downloads</p>
+                          </CardContent>
+                        </Card>
+                        <Card>
+                          <CardContent className="pt-6">
+                            <div className="text-xl font-bold text-gray-900">📋 {last7Days.selected}</div>
+                            <p className="text-xs text-gray-500">Selectie downloads</p>
+                          </CardContent>
+                        </Card>
+                      </>
+                    );
+                  })()}
+                </div>
+              </div>
+
+              {/* Monthly Costs */}
+              {monthlyCost && (
+                <div>
+                  <h3 className="text-lg font-semibold mb-4">
+                    💰 Maandelijkse Kosten ({monthlyCost.month})
+                  </h3>
+                  <div className="grid gap-4 md:grid-cols-4">
+                    <Card>
+                      <CardContent className="pt-6">
+                        <div className="text-2xl font-bold text-gray-900">
+                          ${monthlyCost.total.toFixed(4)}
+                        </div>
+                        <p className="text-xs text-gray-500">Totaal deze maand</p>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="pt-6">
+                        <div className="text-lg font-semibold text-gray-800">
+                          {monthlyCost.storage.toFixed(2)} GB
+                        </div>
+                        <p className="text-xs text-gray-500">Storage</p>
+                        <p className="text-xs text-gray-400">${(monthlyCost.storage * 0.015).toFixed(4)}</p>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="pt-6">
+                        <div className="text-lg font-semibold text-gray-800">
+                          {(monthlyCost.operations.listFiles + monthlyCost.operations.putFile + monthlyCost.operations.deleteFile).toLocaleString()}
+                        </div>
+                        <p className="text-xs text-gray-500">Class A Operations</p>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="pt-6">
+                        <div className="text-lg font-semibold text-gray-800">
+                          {formatBytes(monthlyCost.bandwidth)}
+                        </div>
+                        <p className="text-xs text-gray-500">Bandwidth</p>
+                        <p className="text-xs text-green-600">gratis!</p>
+                      </CardContent>
+                    </Card>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-3">
+                    💡 Kosten resetten automatisch elke maand
+                  </p>
+                </div>
+              )}
+
+              {/* Per Upload Stats */}
+              <div>
+                <h3 className="text-lg font-semibold mb-4">Per Upload</h3>
+                <div className="space-y-3">
+                  {uploads.filter(u => new Date(u.expiresAt) > new Date()).map(upload => (
+                    <Card key={upload.slug}>
+                      <CardContent className="pt-6">
+                        <div className="flex items-center justify-between mb-3">
+                          <div>
+                            <h4 className="font-semibold">{upload.title || upload.slug}</h4>
+                            <p className="text-xs text-gray-500">
+                              {upload.files.length} bestanden • {formatBytes(upload.files.reduce((acc, f) => acc + f.size, 0))}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-2xl font-bold">{upload.downloads}</div>
+                            <p className="text-xs text-gray-500">downloads</p>
+                          </div>
+                        </div>
+
+                        {upload.downloadHistory && upload.downloadHistory.length > 0 && (
+                          <div className="pt-3 border-t">
+                            <p className="text-xs font-medium text-gray-600 mb-2">
+                              Recente downloads:
+                            </p>
+                            <div className="space-y-1 max-h-32 overflow-y-auto">
+                              {upload.downloadHistory.slice().reverse().slice(0, 5).map((download, idx) => (
+                                <div key={idx} className="text-xs text-gray-600 flex items-center justify-between">
+                                  <span>
+                                    {download.type === 'all' && '📦 Alle bestanden'}
+                                    {download.type === 'single' && '📄 Enkel bestand'}
+                                    {download.type === 'selected' && `📋 ${download.files?.length || 0} geselecteerd`}
+                                  </span>
+                                  <span className="text-gray-400">
+                                    {new Date(download.timestamp).toLocaleString('nl-NL', {
+                                      day: '2-digit',
+                                      month: 'short',
+                                      hour: '2-digit',
+                                      minute: '2-digit'
+                                    })}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 border-t bg-gray-50 sticky bottom-0">
+              <Button
+                variant="outline"
+                onClick={() => setShowStatisticsDialog(false)}
+                className="w-full"
+              >
+                Sluiten
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+      </div>
     </div>
   );
 }

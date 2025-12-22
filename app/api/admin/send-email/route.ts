@@ -71,10 +71,14 @@ export async function POST(request: NextRequest) {
 
     // Send email
     const { data, error } = await resend.emails.send({
-      from: "Wouter Vellekoop <noreply@wouter.photo>",
+      from: "Wouter Vellekoop <downloads@wouter.photo>",
       replyTo: "info@woutervellekoop.nl",
       to: recipientEmail,
       subject: emailSubject,
+      headers: {
+        "X-Entity-Ref-ID": slug,
+        "List-Unsubscribe": `<mailto:info@woutervellekoop.nl?subject=Unsubscribe>`,
+      },
       html: `
 <!DOCTYPE html>
 <html lang="nl">

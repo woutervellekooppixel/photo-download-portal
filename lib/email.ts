@@ -21,7 +21,7 @@ export async function sendDownloadNotification(
 ): Promise<void> {
   try {
     await getResend().emails.send({
-      from: "Download Portal <noreply@wouter.photo>",
+      from: "Download Notificaties <downloads@wouter.photo>",
       to: ADMIN_EMAIL,
       subject: `Download: ${slug}`,
       html: `

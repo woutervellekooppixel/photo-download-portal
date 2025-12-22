@@ -39,6 +39,7 @@ export default function DownloadGallery({
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
   const [isSelectMode, setIsSelectMode] = useState(false);
   const [ratings, setRatings] = useState<Record<string, boolean>>({});
+  const [backgroundUrl, setBackgroundUrl] = useState<string | null>(null);
 
   // Helper function to check if file is an image
   const isImage = (filename: string) => {
@@ -84,9 +85,20 @@ export default function DownloadGallery({
     return <FileIcon className="h-5 w-5 text-gray-400 flex-shrink-0" />;
   };
 
+  // Helper function to check if file is JPEG
+  const isJpeg = (filename: string) => {
+    const ext = filename.toLowerCase().split('.').pop();
+    return ['jpg', 'jpeg'].includes(ext || '');
+  };
+
   // Separate images and other files
   const imageFiles = metadata.files.filter(f => isImage(f.name));
   const otherFiles = metadata.files.filter(f => !isImage(f.name));
+  
+  // Check if we should only show ZIP download (non-JPEGs with multiple files)
+  const hasMultipleFiles = metadata.files.length > 1;
+  const allFilesAreJpeg = metadata.files.every(f => isJpeg(f.name));
+  const showOnlyZipDownload = hasMultipleFiles && !allFilesAreJpeg;
   
   // Get preview image - use previewImageKey if set, otherwise first image
   const previewImage = metadata.previewImageKey 
@@ -181,6 +193,32 @@ export default function DownloadGallery({
       setRatings(metadata.ratings);
     }
   }, [metadata.ratings]);
+
+  // Load background image
+  useEffect(() => {
+    // Always use default background - check for different extensions
+    const checkBackground = async () => {
+      const extensions = ['jpg', 'jpeg', 'png', 'svg', 'webp'];
+      
+      for (const ext of extensions) {
+        try {
+          const url = `/default-background.${ext}`;
+          const response = await fetch(url, { method: 'HEAD' });
+          if (response.ok) {
+            setBackgroundUrl(url);
+            return;
+          }
+        } catch (error) {
+          // Continue to next extension
+        }
+      }
+      
+      // Fallback to SVG
+      setBackgroundUrl('/default-background.svg');
+    };
+    
+    checkBackground();
+  }, []);
 
   const downloadAll = async () => {
     setDownloading(true);
@@ -422,7 +460,35 @@ export default function DownloadGallery({
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
+    <div className="min-h-screen relative bg-gradient-to-b from-gray-50 to-gray-100">
+      {/* Background Image */}
+      {backgroundUrl && (
+        <div className="fixed inset-0 z-0">
+          {backgroundUrl.endsWith('.svg') || backgroundUrl.startsWith('/default') ? (
+            <img
+              src={backgroundUrl}
+              alt="Background"
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <Image
+              src={backgroundUrl}
+              alt="Background"
+              fill
+              className="object-cover"
+              sizes="100vw"
+              priority
+              quality={85}
+              unoptimized
+            />
+          )}
+          {/* Overlay for better readability */}
+          <div className="absolute inset-0 bg-gradient-to-b from-white/95 via-white/90 to-white/95" />
+        </div>
+      )}
+      
+      {/* Content wrapper */}
+      <div className="relative z-10">
       {/* Sticky Navigation */}
       <nav className={`sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm backdrop-blur-sm bg-white/95 transition-opacity duration-1000 ${loadingThumbnails ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
         <div className="container mx-auto px-6 max-w-6xl">
@@ -542,8 +608,44 @@ export default function DownloadGallery({
           </h1>
         </div>
 
+        {/* ZIP-only download message */}
+        {showOnlyZipDownload && (
+          <div className="flex items-center justify-center min-h-[50vh]">
+            {!downloading ? (
+              <Button
+                onClick={downloadAll}
+                size="lg"
+                className="shadow-lg text-lg px-8 py-6"
+              >
+                <Download className="mr-2 h-5 w-5" />
+                Download
+              </Button>
+            ) : (
+              <div className="relative w-64 h-12 bg-gray-100 rounded-md overflow-hidden border border-gray-200">
+                <div
+                  className="absolute inset-0 bg-gradient-to-r from-gray-800 to-gray-900 transition-all duration-300 ease-out flex items-center justify-center"
+                  style={{ width: `${downloadProgress}%` }}
+                >
+                  {downloadProgress > 10 && (
+                    <span className="text-white text-sm font-semibold">
+                      {downloadProgress}%
+                    </span>
+                  )}
+                </div>
+                {downloadProgress <= 10 && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-gray-600 text-sm font-semibold">
+                      {downloadProgress}%
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Photos Section */}
-        {imageFiles.length > 0 && (
+        {!showOnlyZipDownload && imageFiles.length > 0 && (
           <div className="mb-12">
             <div className="flex items-center justify-between mb-6">
               {!downloading ? (
@@ -723,7 +825,7 @@ export default function DownloadGallery({
         )}
 
         {/* Files Section */}
-        {otherFiles.length > 0 && (
+        {!showOnlyZipDownload && otherFiles.length > 0 && (
           <div className="mb-12">
             <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
               📁 Bestanden
@@ -815,6 +917,7 @@ export default function DownloadGallery({
         <div className="text-center mt-12 text-sm text-gray-500">
           <p>© Wouter.Photo</p>
         </div>
+      </div>
       </div>
     </div>
   );
