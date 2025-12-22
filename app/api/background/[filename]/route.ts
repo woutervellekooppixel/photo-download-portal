@@ -38,6 +38,9 @@ export async function GET(
       return new NextResponse("Failed to load background", { status: 500 });
     }
 
+    // Convert to Buffer for NextResponse
+    const buffer = Buffer.from(imageBuffer);
+
     // Determine content type from file extension
     const ext = backgroundFile.Key.split('.').pop()?.toLowerCase();
     const contentType = 
@@ -47,7 +50,7 @@ export async function GET(
       ext === 'svg' ? 'image/svg+xml' :
       'image/jpeg';
 
-    return new NextResponse(imageBuffer, {
+    return new NextResponse(buffer, {
       headers: {
         "Content-Type": contentType,
         "Cache-Control": "public, max-age=31536000, immutable",
