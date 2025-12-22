@@ -199,8 +199,14 @@ export default function DownloadGallery({
     }
   }, [metadata.ratings]);
 
-  // Load background image
+  // Load background image (only when no custom preview is set)
   useEffect(() => {
+    // Only load default background if no custom preview is configured
+    if (metadata.previewImageKey) {
+      // Don't load default background, wait for custom preview to load
+      return;
+    }
+    
     // Check for default background via API
     const checkBackground = async () => {
       try {
@@ -208,10 +214,8 @@ export default function DownloadGallery({
         const response = await fetch(url, { method: 'HEAD' });
         if (response.ok) {
           setBackgroundUrl(url);
-          // If no preview image is set, mark as loaded immediately
-          if (!metadata.previewImageKey) {
-            setPreviewLoaded(true);
-          }
+          // Mark as loaded since default background is shown
+          setPreviewLoaded(true);
           return;
         }
       } catch (error) {
