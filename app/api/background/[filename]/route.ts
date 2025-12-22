@@ -4,9 +4,10 @@ import { GetObjectCommand, ListObjectsV2Command } from "@aws-sdk/client-s3";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { filename: string } }
+  context: { params: Promise<{ filename: string }> }
 ) {
   try {
+    const params = await context.params;
     const filename = params.filename;
     
     // List files in backgrounds folder to find the exact file
