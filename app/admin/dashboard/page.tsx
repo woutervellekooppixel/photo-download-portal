@@ -79,6 +79,44 @@ export default function AdminDashboard() {
     }
   }, []);
 
+  // Load current background image
+  useEffect(() => {
+    const loadCurrentBackground = async () => {
+      const extensions = ['jpg', 'jpeg', 'png', 'webp'];
+      const r2BaseUrl = process.env.NEXT_PUBLIC_R2_PUBLIC_URL || 'https://pub-8e5c3f0a69f64c26b3c64d93b8a9ae61.r2.dev';
+      
+      // Try R2 first (production)
+      for (const ext of extensions) {
+        try {
+          const url = `${r2BaseUrl}/default-background.${ext}`;
+          const response = await fetch(url, { method: 'HEAD' });
+          if (response.ok) {
+            setDefaultBackgroundPreview(url);
+            return;
+          }
+        } catch (error) {
+          // Continue
+        }
+      }
+      
+      // Try local (development)
+      for (const ext of extensions) {
+        try {
+          const url = `/default-background.${ext}`;
+          const response = await fetch(url, { method: 'HEAD' });
+          if (response.ok) {
+            setDefaultBackgroundPreview(url);
+            return;
+          }
+        } catch (error) {
+          // Continue
+        }
+      }
+    };
+    
+    loadCurrentBackground();
+  }, []);
+
   const saveTemplate = () => {
     if (!templateName.trim()) {
       toast({
@@ -1503,11 +1541,16 @@ export default function AdminDashboard() {
                         });
                         
                         if (res.ok) {
+                          const data = await res.json();
                           toast({
                             title: "Opgeslagen!",
                             description: "Standaard achtergrond is bijgewerkt",
                           });
                           setDefaultBackgroundFile(null);
+                          // Update preview with the uploaded image URL
+                          if (data.url) {
+                            setDefaultBackgroundPreview(data.url);
+                          }
                         } else {
                           throw new Error('Upload failed');
                         }
