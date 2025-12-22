@@ -85,20 +85,14 @@ export default function DownloadGallery({
     return <FileIcon className="h-5 w-5 text-gray-400 flex-shrink-0" />;
   };
 
-  // Helper function to check if file is JPEG
-  const isJpeg = (filename: string) => {
-    const ext = filename.toLowerCase().split('.').pop();
-    return ['jpg', 'jpeg'].includes(ext || '');
-  };
-
   // Separate images and other files
   const imageFiles = metadata.files.filter(f => isImage(f.name));
   const otherFiles = metadata.files.filter(f => !isImage(f.name));
   
-  // Check if we should only show ZIP download (non-JPEGs with multiple files)
+  // Check if we should only show ZIP download (when there are non-image files)
   const hasMultipleFiles = metadata.files.length > 1;
-  const allFilesAreJpeg = metadata.files.every(f => isJpeg(f.name));
-  const showOnlyZipDownload = hasMultipleFiles && !allFilesAreJpeg;
+  const hasNonImageFiles = metadata.files.some(f => !isImage(f.name));
+  const showOnlyZipDownload = hasMultipleFiles && hasNonImageFiles;
   
   // Get preview image - use previewImageKey if set, otherwise first image
   const previewImage = metadata.previewImageKey 
@@ -498,8 +492,6 @@ export default function DownloadGallery({
               unoptimized
             />
           )}
-          {/* Overlay for better readability */}
-          <div className="absolute inset-0 bg-gradient-to-b from-white/95 via-white/90 to-white/95" />
         </div>
       )}
       
