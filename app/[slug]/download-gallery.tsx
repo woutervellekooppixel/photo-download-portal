@@ -41,6 +41,19 @@ export default function DownloadGallery({
   const [ratings, setRatings] = useState<Record<string, boolean>>({});
   const [backgroundUrl, setBackgroundUrl] = useState<string | null>(null);
 
+  // Helper function to check if file should be filtered out
+  const shouldFilterFile = (filename: string) => {
+    const name = filename.toLowerCase();
+    const ext = name.split('.').pop();
+    // Filter out system files and metadata files
+    return [
+      '.ds_store',
+      '.xmp',
+      'thumbs.db',
+      'desktop.ini'
+    ].some(pattern => name.includes(pattern)) || name.startsWith('.');
+  };
+
   // Helper function to check if file is an image
   const isImage = (filename: string) => {
     const ext = filename.toLowerCase().split('.').pop();
@@ -85,14 +98,17 @@ export default function DownloadGallery({
     return <FileIcon className="h-5 w-5 text-gray-400 flex-shrink-0" />;
   };
 
-  // Separate images and other files
-  const imageFiles = metadata.files.filter(f => isImage(f.name));
-  const otherFiles = metadata.files.filter(f => !isImage(f.name));
+  // Filter out system files first
+  const visibleFiles = metadata.files.filter(f => !shouldFilterFile(f.name));
   
-  // Get preview image - use previewImageKey if set, otherwise first image
+  // Separate images and other files
+  const imageFiles = visibleFiles.filter(f => isImage(f.name));
+  const otherFiles = visibleFiles.filter(f => !isImage(f.name));
+  
+  // Get preview image - use previewImageKey if set, otherwise use background
   const previewImage = metadata.previewImageKey 
     ? metadata.files.find(f => f.key === metadata.previewImageKey)
-    : imageFiles[0];
+    : null; // Don't use first image, use background instead
 
   // Load thumbnail URLs
   useEffect(() => {
@@ -106,13 +122,13 @@ export default function DownloadGallery({
       const totalDuration = 8000;
       const intervalTime = 50;
       const steps = totalDuration / intervalTime;
-      const increment = metadata.files.length / steps;
+      const increment = visibleFiles.length / steps;
       
       let currentProgress = 0;
       const progressInterval = setInterval(() => {
         currentProgress += increment;
-        if (currentProgress >= metadata.files.length) {
-          currentProgress = metadata.files.length;
+        if (currentProgress >= visibleFiles.length) {
+          currentProgress = visibleFiles.length;
           clearInterval(progressInterval);
         }
         setThumbnailsLoaded(Math.floor(currentProgress));
@@ -196,6 +212,10 @@ export default function DownloadGallery({
           const response = await fetch(url, { method: 'HEAD' });
           if (response.ok) {
             setBackgroundUrl(url);
+            // If no preview image is set, mark as loaded immediately
+            if (!metadata.previewImageKey) {
+              setPreviewLoaded(true);
+            }
             return;
           }
         } catch (error) {
@@ -211,6 +231,10 @@ export default function DownloadGallery({
           const response = await fetch(url, { method: 'HEAD' });
           if (response.ok) {
             setBackgroundUrl(url);
+            // If no preview image is set, mark as loaded immediately
+            if (!metadata.previewImageKey) {
+              setPreviewLoaded(true);
+            }
             return;
           }
         } catch (error) {
@@ -220,10 +244,13 @@ export default function DownloadGallery({
       
       // Fallback to SVG from public
       setBackgroundUrl('/default-background.svg');
+      if (!metadata.previewImageKey) {
+        setPreviewLoaded(true);
+      }
     };
     
     checkBackground();
-  }, []);
+  }, [metadata.previewImageKey]);
 
   const downloadAll = async () => {
     setDownloading(true);
@@ -420,7 +447,7 @@ export default function DownloadGallery({
     }
   };
 
-  const totalSize = metadata.files.reduce((acc, file) => acc + file.size, 0);
+  const totalSize = visibleFiles.reduce((acc, file) => acc + file.size, 0);
   
   // Format expiry date as dd-mm
   const formatExpiryDate = (dateString: string) => {
@@ -465,30 +492,7 @@ export default function DownloadGallery({
   };
 
   return (
-    <div className="min-h-screen relative bg-gradient-to-b from-gray-50 to-gray-100">
-      {/* Background Image */}
-      {backgroundUrl && (
-        <div className="fixed inset-0 z-0">
-          {backgroundUrl.endsWith('.svg') || backgroundUrl.startsWith('/default') ? (
-            <img
-              src={backgroundUrl}
-              alt="Background"
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <Image
-              src={backgroundUrl}
-              alt="Background"
-              fill
-              className="object-cover"
-              sizes="100vw"
-              priority
-              quality={85}
-              unoptimized
-            />
-          )}
-        </div>
-      )}
+    <div className="min-h-screen relative bg-white">
       
       {/* Content wrapper */}
       <div className="relative z-10">
@@ -508,7 +512,7 @@ export default function DownloadGallery({
                 <span className="font-normal">PHOTO</span>
               </a>
               <div className="hidden md:flex items-center gap-2 text-sm text-gray-600">
-                <span>{metadata.files.length} bestand{metadata.files.length !== 1 ? 'en' : ''}</span>
+                <span>{visibleFiles.length} bestand{visibleFiles.length !== 1 ? 'en' : ''}</span>
                 <span className="text-gray-400">•</span>
                 <span>{formatBytes(totalSize)}</span>
                 <span className="text-gray-400">•</span>
@@ -556,9 +560,9 @@ export default function DownloadGallery({
         >
           {/* Fullscreen preview image - sharp and clear */}
           <div className="absolute inset-0 bg-gray-900">
-            {previewImage && thumbnailUrls[previewImage.key] ? (
+            {(previewImage && thumbnailUrls[previewImage.key]) || backgroundUrl ? (
               <Image
-                src={thumbnailUrls[previewImage.key]}
+                src={(previewImage && thumbnailUrls[previewImage.key]) || backgroundUrl || ''}
                 alt="Loading preview"
                 fill
                 className="object-cover animate-in fade-in duration-700"
@@ -566,6 +570,7 @@ export default function DownloadGallery({
                 priority
                 onLoad={() => setPreviewLoaded(true)}
                 placeholder="empty"
+                unoptimized={backgroundUrl?.startsWith('http')}
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center bg-gray-900">
@@ -594,7 +599,7 @@ export default function DownloadGallery({
               <div className="absolute bottom-8 left-0 right-0 flex justify-center animate-in fade-in duration-700 delay-300">
                 <div className="bg-black/30 backdrop-blur-sm px-6 py-2 rounded-full">
                   <div className="text-white text-sm font-light tracking-wide">
-                    {Math.round((thumbnailsLoaded / metadata.files.length) * 100)}% • {thumbnailsLoaded} van {metadata.files.length}
+                    {Math.round((thumbnailsLoaded / visibleFiles.length) * 100)}% • {thumbnailsLoaded} van {visibleFiles.length}
                   </div>
                 </div>
               </div>
