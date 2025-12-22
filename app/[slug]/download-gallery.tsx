@@ -200,6 +200,7 @@ export default function DownloadGallery({
     const checkBackground = async () => {
       const extensions = ['jpg', 'jpeg', 'png', 'svg', 'webp'];
       
+      // First try local public directory (development)
       for (const ext of extensions) {
         try {
           const url = `/default-background.${ext}`;
@@ -213,7 +214,22 @@ export default function DownloadGallery({
         }
       }
       
-      // Fallback to SVG
+      // Then try R2 public URL (production)
+      const r2BaseUrl = process.env.NEXT_PUBLIC_R2_PUBLIC_URL || 'https://pub-8e5c3f0a69f64c26b3c64d93b8a9ae61.r2.dev';
+      for (const ext of extensions) {
+        try {
+          const url = `${r2BaseUrl}/default-background.${ext}`;
+          const response = await fetch(url, { method: 'HEAD' });
+          if (response.ok) {
+            setBackgroundUrl(url);
+            return;
+          }
+        } catch (error) {
+          // Continue to next extension
+        }
+      }
+      
+      // Fallback to SVG from public
       setBackgroundUrl('/default-background.svg');
     };
     

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdminAuth } from "@/lib/auth";
-import { writeFile } from "fs/promises";
-import path from "path";
+import { r2 } from "@/lib/r2";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
 
 export async function POST(req: NextRequest) {
   const authError = await requireAdminAuth();
@@ -19,18 +19,33 @@ export async function POST(req: NextRequest) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // Determine file extension
-    const ext = file.name.split('.').pop() || 'jpg';
+    // Determine file extension and content type
+    const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
     const filename = `default-background.${ext}`;
+    
+    const contentType = file.type || 
+      (ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' :
+       ext === 'png' ? 'image/png' :
+       ext === 'webp' ? 'image/webp' :
+       ext === 'svg' ? 'image/svg+xml' :
+       'image/jpeg');
 
-    // Save to public directory
-    const publicPath = path.join(process.cwd(), "public", filename);
-    await writeFile(publicPath, buffer);
+    // Upload to R2 in the root
+    await r2.send(
+      new PutObjectCommand({
+        Bucket: process.env.R2_BUCKET_NAME!,
+        Key: filename,
+        Body: buffer,
+        ContentType: contentType,
+      })
+    );
+
+    const publicUrl = `${process.env.R2_PUBLIC_URL}/${filename}`;
 
     return NextResponse.json({ 
       success: true, 
       filename,
-      url: `/${filename}`
+      url: publicUrl
     });
   } catch (error) {
     console.error("Error uploading background:", error);
